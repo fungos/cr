@@ -16,7 +16,8 @@ addons:
       - libglu1-mesa-dev
       - xorg-dev
       - libasound2-dev
-
+env:
+    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 script:
     - git --version
     # setup and check fips
