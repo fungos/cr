@@ -3,6 +3,20 @@ compiler: gcc
 os: 
     - linux
 
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - george-edison55-precise-backports # cmake 3.x
+    packages:
+      - cmake
+      - cmake-data
+      - gcc-4.8
+      - g++-4.8
+      - libglu1-mesa-dev
+      - xorg-dev
+      - libasound2-dev
+
 install:
     - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     - sudo apt-get update -qq
