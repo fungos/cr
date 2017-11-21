@@ -11,8 +11,8 @@ addons:
     packages:
       - cmake
       - cmake-data
-      - gcc-4.8
-      - g++-4.8
+      - gcc-7
+      - g++-7
       - libglu1-mesa-dev
       - xorg-dev
       - libasound2-dev
