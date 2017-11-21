@@ -1,0 +1,7 @@
+# https://ci.appveyor.com/project/fungos/cr
+---
+clone_depth: 3
+
+build_script:
+    - cmd: c:/Python36/python.exe fips build win64-vstudio-debug
+    - cmd: c:/Python36/python.exe fips run crTest

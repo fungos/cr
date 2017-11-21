@@ -1,0 +1,23 @@
+language: cpp
+compiler: gcc
+os: 
+    - linux
+
+install:
+    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq g++-4.8
+    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+    - sudo apt-get install -qq cmake
+    - sudo apt-get install -qq ccache
+
+script:
+    - git --version
+    # setup and check fips
+    - git clone https://github.com/floooh/fips.git ../fips
+    # build
+    - python fips list targets
+    - python fips gen
+    - python fips build
+    # run tests
+    - python fips run crTest

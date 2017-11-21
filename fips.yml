@@ -1,0 +1,13 @@
+# cr
+---
+imports:
+    fips-glfw:
+        git: https://github.com/floooh/fips-glfw.git
+    fips-imgui:
+        git: https://github.com/fungos/fips-imgui.git
+    fips-googletest:
+        git: https://github.com/fungos/fips-googletest.git
+run:
+    game:
+        cwd: ./host
+
