@@ -1,42 +1,61 @@
 {
  "configurations":[
+     {
+         "name": "(gdb) tests",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/../fips-deploy/cr/linux-make-debug/crTest",
+         "args": [],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "externalConsole": true,
+         "MIMode": "gdb",
+         "setupCommands": [
+             {
+                 "description": "Enable pretty-printing for gdb",
+                 "text": "-enable-pretty-printing",
+                 "ignoreFailures": true
+             }
+         ]
+     },
   {
    "request":"launch",
-   "name":"imgui_host",
+   "name":"(win) imgui_host",
    "environment":[],
-   "program":"C:/Danny/fips/fips-deploy/cr/win64-vscode-debug/imgui_host.exe",
+   "program":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug/imgui_host.exe",
    "stopAtEntry":true,
    "type":"cppvsdbg",
    "externalConsole":false,
-   "cwd":"C:/Danny/fips/fips-deploy/cr/win64-vscode-debug",
+   "cwd":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug",
    "args":[]
   },
   {
    "request":"launch",
-   "name":"crTest",
+   "name":"(win) tests",
    "environment":[],
-   "program":"C:/Danny/fips/fips-deploy/cr/win64-vscode-debug/crTest.exe",
+   "program":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug/crTest.exe",
    "stopAtEntry":true,
    "type":"cppvsdbg",
    "externalConsole":false,
-   "cwd":"C:/Danny/fips/fips-deploy/cr/win64-vscode-debug",
+   "cwd":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug",
    "args":[]
   },
   {
    "request":"launch",
-   "name":"basic_host",
+   "name":"(win) basic_host",
    "environment":[],
-   "program":"C:/Danny/fips/fips-deploy/cr/win64-vscode-debug/basic_host.exe",
+   "program":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug/basic_host.exe",
    "stopAtEntry":true,
    "type":"cppvsdbg",
    "externalConsole":false,
-   "cwd":"C:/Danny/fips/fips-deploy/cr/win64-vscode-debug",
+   "cwd":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug",
    "args":[]
   },
   {
    "request":"launch",
-   "name":"fips codegen",
-   "program":"C:/Danny/fips/cr/.fips-gen.py",
+   "name":"(win) fips codegen",
+   "program":"${workspaceFolder}/cr/.fips-gen.py",
    "pythonPath":"${config:python.pythonPath}",
    "type":"python",
    "debugOptions":[
@@ -44,10 +63,10 @@
     "WaitOnNormalExit",
     "RedirectOutput"
    ],
-   "cwd":"C:/Danny/fips/cr",
+   "cwd":"${workspaceFolder}/cr",
    "stopOnEntry":true,
    "args":[
-    "C:/Danny/fips/fips-build/cr/win64-vscode-debug/fips_codegen.yml"
+    "${workspaceFolder}/fips-build/cr/win64-vscode-debug/fips_codegen.yml"
    ]
   }
  ],

@@ -1,8 +1,7 @@
-#include <sstream>
-#include <cstdint>
-#include <cstdio>
-#include <chrono>
-#include <thread>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <assert.h>
 #include "../cr.h"
 
 // To save states automatically from previous instance to a new loaded one, use CR_STATE flag on statics/globals.
@@ -32,15 +31,16 @@ void hello() {
 }
 
 void test_crash() {
-    int *addr = nullptr; (void)addr; // warning
+    int *addr = NULL; (void)addr; // warning
     // to test crash protection, uncomment the following line
     //int i = *addr;
 }
 
-CR_EXPORT int cr_main(cr_plugin &ctx, cr_op operation) {
+CR_EXPORT int cr_main(struct cr_plugin *ctx, enum cr_op operation) {
+    assert(ctx);
     if (operation != CR_STEP) {
-        fprintf(stdout, "OP: %s(%d)\n", operation == CR_LOAD ? "LOAD" : "UNLOAD", ctx.version);
-        int *addr = nullptr; (void)addr; // warning
+        fprintf(stdout, "OP: %s(%d)\n", operation == CR_LOAD ? "LOAD" : "UNLOAD", ctx->version);
+        int *addr = NULL; (void)addr; // warning
         // to test crash protection during load
         //int i = *addr;
         return 0;
@@ -48,26 +48,26 @@ CR_EXPORT int cr_main(cr_plugin &ctx, cr_op operation) {
 
     // crash protection may cause the version to decrement. So we can test current version against one
     // tracked between instances with CR_STATE to signal that we're not running the most recent instance.
-    if (ctx.version < version) {
+    if (ctx->version < version) {
         // a failure code is acessible in the `failure` variable from the `cr_plugin` context.
         // on windows this is the structured exception error code, for more info:
         //      https://msdn.microsoft.com/en-us/library/windows/desktop/ms679356(v=vs.85).aspx
-        fprintf(stdout, "A rollback happened due to failure: %x!\n", ctx.failure);
+        fprintf(stdout, "A rollback happened due to failure: %x!\n", ctx->failure);
     }
-    version = ctx.version;
+    version = ctx->version;
 
     // Not this does not carry state between instances (no CR_STATE), this means each time we load an instance
     // this value will be reset to its initial state (true), and then we can print the loaded instance version
     // one time only by instance version.
     static bool print_version = true;
     if (print_version) {
-        std::fprintf(stdout, "loaded version: %d\n", ctx.version);
+        fprintf(stdout, "loaded version: %d\n", ctx->version);
 
         // disable further printing for this instance only
         print_version = false;
     }
     hello();
     test_crash();
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     return 0;
 }

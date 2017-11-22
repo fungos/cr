@@ -1,5 +1,5 @@
 fips_begin_sharedlib(basic_guest cmdline)
-    fips_files(basic_guest.cpp)
+    fips_files(basic_guest.c)
 fips_end_sharedlib()
 
 fips_begin_app(basic_host cmdline)

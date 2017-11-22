@@ -297,7 +297,7 @@ enum cr_failure {
 
 struct cr_plugin;
 
-typedef int (*cr_plugin_main_func)(cr_plugin &ctx, cr_op operation);
+typedef int (*cr_plugin_main_func)(struct cr_plugin *ctx, enum cr_op operation);
 
 // public interface for the plugin context, this has some user facing
 // variables that may be used to manage reload feedback.
@@ -306,11 +306,11 @@ typedef int (*cr_plugin_main_func)(cr_plugin &ctx, cr_op operation);
 //   be 1, not 0)
 // - failure is the (platform specific) last error code for any crash that may
 //   happen to cause a rollback reload used by the crash protection system
-extern "C" struct cr_plugin {
-    void *p = nullptr;
-    void *userdata = nullptr;
-    unsigned int version = 0;
-    cr_failure failure = CR_NONE;
+struct cr_plugin {
+    void *p;
+    void *userdata;
+    unsigned int version;
+    enum cr_failure failure;
 };
 
 #ifndef CR_HOST
@@ -321,12 +321,21 @@ extern "C" struct cr_plugin {
 #if defined(_MSC_VER)
 // GCC: __attribute__((section(".state")))
 #define CR_STATE __declspec(allocate(".state"))
+
+#if defined(__cplusplus)
 #define CR_EXPORT extern "C" __declspec(dllexport)
+#else
+#define CR_EXPORT
+#endif
 #endif // defined(_MSC_VER)
 
 #if defined(__GNUC__) // clang & gcc
 #define CR_STATE __attribute__((section(".state")))
+#if defined(__cplusplus)
 #define CR_EXPORT extern "C" __attribute__((visibility("default")))
+#else
+#define CR_EXPORT
+#endif
 #endif // defined(__GNUC__)
 
 #else // #ifndef CR_HOST
@@ -795,7 +804,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
     __try {
         if (p->main) {
-            return p->main(ctx, operation);
+            return p->main(&ctx, operation);
         }
     } __except (cr_seh_filter(ctx, GetExceptionCode())) {
         return -1;
@@ -1106,7 +1115,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
         auto p = (cr_internal *)ctx.p;
         assert(p);
         if (p->main) {
-            return p->main(ctx, operation);
+            return p->main(&ctx, operation);
         }
     }
 
@@ -1368,6 +1377,8 @@ extern "C" bool cr_plugin_load(cr_plugin &ctx, const char *fullpath) {
     p->mode = CR_OP_MODE;
     p->fullname = fs::path(fullpath);
     ctx.p = p;
+    ctx.version = 0;
+    ctx.failure = CR_NONE;
     cr_plat_init();
     return true;
 }
