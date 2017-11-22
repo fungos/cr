@@ -16,7 +16,6 @@ addons:
       - g++-7
       - libglu1-mesa-dev
       - xorg-dev
-      - libasound2-dev
 script:
     - sudo ln -s /usr/bin/gcc-7 /usr/local/bin/gcc
     - sudo ln -s /usr/bin/g++-7 /usr/local/bin/g++
@@ -27,8 +26,8 @@ script:
     # setup and check fips
     - git clone https://github.com/floooh/fips.git ../fips
     # build
-    - python fips list targets
     - python fips gen
+    - python fips list targets
     - python fips build
     # run tests
     - python fips run crTest

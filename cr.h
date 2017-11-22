@@ -1389,7 +1389,6 @@ extern "C" void cr_plugin_close(cr_plugin &ctx) {
     const bool close = true;
     cr_plugin_unload(ctx, rollback, close);
     cr_so_sections_free(ctx);
-    memset(ctx.p, '\0', sizeof(cr_internal));
     auto p = (cr_internal *)ctx.p;
     delete p;
     ctx.p = nullptr;
