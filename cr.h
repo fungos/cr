@@ -3,13 +3,13 @@
  
 A single file header-only live reload solution for C, written in C++:
 
-- simple public API, 3 functions only;
+- simple public API, 3 functions only to use (and only one to export);
 - works and tested on Linux and Windows;
 - automatic crash protection;
 - automatic static state transfer;
 - based on dynamic reloadable binary (.so/.dll);
 - MIT licensed;
-- requires C++17 (filesystem support - yes, I'm lazy);
+- requires C++17 (filesystem support);
 
 ### Build Status:
 
@@ -17,6 +17,11 @@ A single file header-only live reload solution for C, written in C++:
 |--------|------|
 |Linux|[![Build Status](https://travis-ci.org/fungos/cr.svg?branch=master)](https://travis-ci.org/fungos/cr)|
 |Windows|[![Build status](https://ci.appveyor.com/api/projects/status/jf0dq97w9b7b5ihi?svg=true)](https://ci.appveyor.com/project/fungos/cr)|
+
+Note that the only file that matters is `cr.h`.
+
+This file contains the documentation in markdown, the license, the implementation and the public api.
+All other files in this repository are supporting files and can be safely ignored.
 
 ### Example
 
@@ -48,7 +53,8 @@ int main(int argc, char *argv[]) {
 While the guest (real application), would be like:
 
 ```c
-CR_EXPORT int cr_main(cr_plugin &ctx, cr_op operation) {
+CR_EXPORT int cr_main(struct cr_plugin *ctx, enum cr_op operation) {
+    assert(ctx);
     switch (operation) {
         case CR_LOAD:   return on_load(...);
         case CR_UNLOAD: return on_unload(...);
@@ -86,15 +92,13 @@ $ ./fips make imgui_guest # to build and force imgui sample live reload
 
 ### Documentation
 
-#### `int (*cr_main)(cr_plugin &ctx, cr_op operation)`
+#### `int (*cr_main)(struct cr_plugin *ctx, enum cr_op operation)`
 
 This is the function pointer to the dynamic loadable binary entry point function.
 
 Arguments
 
-- `ctx` a context that will be passed from `host` to the `guest` containing
- valuable information about the current loaded version, failure reason and user
-  data. For more info see `cr_plugin`.
+- `ctx` pointer to a context that will be passed from `host` to the `guest` containing valuable information about the current loaded version, failure reason and user data. For more info see `cr_plugin`.
 - `operation` which operation is being executed, see `cr_op`.
 
 Return
