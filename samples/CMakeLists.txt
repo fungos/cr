@@ -9,6 +9,17 @@ fips_begin_app(basic_host cmdline)
     endif()
 fips_end_app()
 
+fips_begin_sharedlib(basic_guest_b cmdline)
+    fips_files(basic_guest_b.c)
+fips_end_sharedlib()
+
+fips_begin_app(basic_host_b cmdline)
+    fips_files(basic_host_b.cpp)
+    if (FIPS_LINUX OR FIPS_MACOS)
+        fips_libs(dl stdc++fs)
+    endif()
+fips_end_app()
+
 fips_begin_sharedlib(imgui_guest cmdline)
     fips_files(imgui_guest.cpp)
     fips_src(GL GROUP_FOLDERS)
