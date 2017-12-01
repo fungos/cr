@@ -323,6 +323,25 @@ struct cr_plugin {
     enum cr_failure failure;
 };
 
+#if defined(_MSC_VER)
+#if defined(__cplusplus)
+#define CR_EXPORT extern "C" __declspec(dllexport)
+#define CR_IMPORT extern "C" __declspec(dllimport)
+#else
+#define CR_EXPORT __declspec(dllexport)
+#define CR_IMPORT __declspec(dllimport)
+#endif
+#endif // defined(_MSC_VER)
+
+#if defined(__GNUC__) // clang & gcc
+#if defined(__cplusplus)
+#define CR_EXPORT extern "C" __attribute__((visibility("default")))
+#else
+#define CR_EXPORT __attribute__((visibility("default")))
+#endif
+#define CR_IMPORT
+#endif // defined(__GNUC__)
+
 #ifndef CR_HOST
 
 // Some helpers required in the guest side.
@@ -331,21 +350,10 @@ struct cr_plugin {
 #if defined(_MSC_VER)
 // GCC: __attribute__((section(".state")))
 #define CR_STATE __declspec(allocate(".state"))
-
-#if defined(__cplusplus)
-#define CR_EXPORT extern "C" __declspec(dllexport)
-#else
-#define CR_EXPORT __declspec(dllexport)
-#endif
 #endif // defined(_MSC_VER)
 
 #if defined(__GNUC__) // clang & gcc
 #define CR_STATE __attribute__((section(".state")))
-#if defined(__cplusplus)
-#define CR_EXPORT extern "C" __attribute__((visibility("default")))
-#else
-#define CR_EXPORT __attribute__((visibility("default")))
-#endif
 #endif // defined(__GNUC__)
 
 #else // #ifndef CR_HOST
