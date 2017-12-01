@@ -27,7 +27,6 @@ struct HostData {
     double timestep = 0.0;
     bool mousePressed[3] = {false, false, false};
     float mouseWheel = 0.0f;
-    bool keysDown[512] = {};
     unsigned short inputCharacters[16 + 1] = {};
 
     // glfw functions that imgui calls on guest side
