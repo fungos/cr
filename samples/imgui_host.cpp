@@ -89,9 +89,9 @@ void ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow*, int key, int, int action, int mo
 void ImGui_ImplGlfwGL3_CharCallback(GLFWwindow*, unsigned int c) {
     if (c > 0 && c < 0x10000) {
         int n = 0;
-        unsigned short *p = data.inputCharacters;
-        while (p++)
+        for (unsigned short *p = data.inputCharacters; *p; p++) {
             n++;
+        }
         const int len = ((int)(sizeof(data.inputCharacters)/sizeof(*data.inputCharacters)));
         if (n + 1 < len) {
             data.inputCharacters[n] = c;
