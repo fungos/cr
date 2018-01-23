@@ -842,7 +842,10 @@ using so_handle = void *;
 // this is used to validate that the data in the .bss haven't changed
 // and that we are safe to discard it and uses the new one.
 bool cr_is_empty(const void *const buf, int64_t len) {
-    assert(buf);
+    if (!buf || !len) {
+        return true;
+    }
+
     bool r = false;
     auto c = (const char *const)buf;
     for (int i = 0; i < len; ++i) {
@@ -852,7 +855,7 @@ bool cr_is_empty(const void *const buf, int64_t len) {
 }
 
 // unix,internal
-// save section informations to be used during load/unload when copying
+// save section information to be used during load/unload when copying
 // around global state (from .bss and .state binary sections).
 // vaddr = is the in memory loaded address of the segment-section
 // base = is the in file section address
@@ -1225,7 +1228,10 @@ static void cr_plugin_sections_backup(cr_plugin &ctx) {
             bkp->ptr = cur->ptr;
             bkp->size = cur->size;
             bkp->base = cur->base;
-            std::memcpy(bkp->data, cur->data, bkp->size);
+
+            if (bkp->data) {
+                std::memcpy(bkp->data, cur->data, bkp->size);
+            }
         }
     }
 }
@@ -1243,7 +1249,7 @@ static void cr_plugin_sections_store(cr_plugin &ctx) {
     }
     auto version = cr_plugin_section_version::current;
     for (int i = 0; i < cr_plugin_section_type::count; ++i) {
-        if (p->data[i][version].ptr) {
+        if (p->data[i][version].ptr && p->data[i][version].data) {
             const char *ptr = p->data[i][version].ptr;
             const int64_t len = p->data[i][version].size;
             std::memcpy(p->data[i][version].data, ptr, len);
@@ -1270,7 +1276,9 @@ static void cr_plugin_sections_reload(cr_plugin &ctx,
             // change due aslr and backup address may be invalid
             const auto current = cr_plugin_section_version::current;
             auto dest = (void *)p->data[i][current].ptr;
-            std::memcpy(dest, p->data[i][version].data, len);
+            if (dest) {
+                std::memcpy(dest, p->data[i][version].data, len);
+            }
         }
     }
 }
