@@ -15,7 +15,7 @@ using namespace test_basic;
 static uint32_t CR_STATE global_int = 0;
 
 DEFINE_TEST(return_version) {
-    return ctx.version;
+    return ctx->version;
 }
 
 DEFINE_TEST(static_local_state_int) {
@@ -86,8 +86,8 @@ DEFINE_TEST(crash_unload) {
     return 0;
 }
 
-CR_EXPORT int cr_main(cr_plugin &ctx, cr_op operation) {
-    test_data *data = (test_data *)ctx.userdata;
+CR_EXPORT int cr_main(cr_plugin *ctx, cr_op operation) {
+    test_data *data = (test_data *)ctx->userdata;
     // clang-format off
     #include "test_basic.x"
     return -1;

@@ -2,7 +2,7 @@
 #pragma once
 
 #define CASE_TEST(id) case test_id::id: return test_##id(ctx, operation, data);
-#define DEFINE_TEST(id) int test_##id(cr_plugin &ctx, cr_op operation, test_data *data)
+#define DEFINE_TEST(id) int test_##id(cr_plugin *ctx, cr_op operation, test_data *data)
 
 namespace test_basic {
 

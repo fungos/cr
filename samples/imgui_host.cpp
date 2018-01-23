@@ -35,7 +35,6 @@ struct HostData {
     double timestep = 0.0;
     bool mousePressed[3] = {false, false, false};
     float mouseWheel = 0.0f;
-    bool keysDown[512] = {};
     unsigned short inputCharacters[16 + 1] = {};
 
     // glfw functions that imgui calls on guest side
@@ -81,17 +80,17 @@ static void ImGui_ImplGlfwGL3_SetClipboardText(void* user_data, const char* text
 
 void ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow*, int key, int, int action, int mods) {
     if (action == GLFW_PRESS)
-        data.keysDown[key] = true;
+        g_imgui_context.IO.KeysDown[key] = true;
     if (action == GLFW_RELEASE)
-        data.keysDown[key] = false;
+        g_imgui_context.IO.KeysDown[key] = false;
 }
 
 void ImGui_ImplGlfwGL3_CharCallback(GLFWwindow*, unsigned int c) {
     if (c > 0 && c < 0x10000) {
         int n = 0;
-        unsigned short *p = data.inputCharacters;
-        while (p++)
+        for (unsigned short *p = data.inputCharacters; *p; p++) {
             n++;
+        }
         const int len = ((int)(sizeof(data.inputCharacters)/sizeof(*data.inputCharacters)));
         if (n + 1 < len) {
             data.inputCharacters[n] = c;

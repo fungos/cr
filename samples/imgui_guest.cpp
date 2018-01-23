@@ -27,7 +27,6 @@ struct HostData {
     double timestep = 0.0;
     bool mousePressed[3] = {false, false, false};
     float mouseWheel = 0.0f;
-    bool keysDown[512] = {};
     unsigned short inputCharacters[16 + 1] = {};
 
     // glfw functions that imgui calls on guest side
@@ -454,10 +453,11 @@ void imui_draw() {
     }
 }
 
-CR_EXPORT int cr_main(cr_plugin &ctx, cr_op operation) {
-    g_data = (HostData *)ctx.userdata;
-    g_version = ctx.version;
-    g_failure = ctx.failure;
+CR_EXPORT int cr_main(cr_plugin *ctx, cr_op operation) {
+    assert(ctx);
+    g_data = (HostData *)ctx->userdata;
+    g_version = ctx->version;
+    g_failure = ctx->failure;
 
     switch (operation) {
         case CR_LOAD:
