@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
 
 #define CR_HOST
 #include "../cr.h"
