@@ -7,9 +7,11 @@ os:
 addons:
   apt:
     sources:
+      - sourceline: "ppa:george-edison55/cmake-3.x"
       - ubuntu-toolchain-r-test
     packages:
       - cmake
+      - cmake-data
       - gcc-7
       - g++-7
       - libglu1-mesa-dev
