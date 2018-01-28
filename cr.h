@@ -922,14 +922,18 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
+#ifndef __MINGW32__
     __try {
+#endif
         if (p->main) {
             return p->main(&ctx, operation);
         }
+#ifndef __MINGW32__
     } __except (cr_seh_filter(ctx, GetExceptionCode())) {
         return -1;
     }
-    return 0;
+#endif
+    return -1;
 }
 
 #endif // _WIN32
@@ -1278,7 +1282,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
         }
     }
 
-    return 0;
+    return -1;
 }
 #endif // __unix__
 
