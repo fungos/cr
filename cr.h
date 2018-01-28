@@ -929,7 +929,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     } __except (cr_seh_filter(ctx, GetExceptionCode())) {
         return -1;
     }
-    return 0;
+    return -1;
 }
 
 #endif // _WIN32
@@ -1278,7 +1278,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
         }
     }
 
-    return 0;
+    return -1;
 }
 #endif // __unix__
 
