@@ -260,7 +260,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 <summary>View Source Code</summary>
 
 ```c
-*/
 #ifndef __CR_H__
 #define __CR_H__
 
@@ -1560,7 +1559,5 @@ extern "C" void cr_plugin_close(cr_plugin &ctx) {
 
 #endif // __CR_H__
 // clang-format off
-/*
 ```
-
 </details>

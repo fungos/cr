@@ -8,11 +8,10 @@ namespace fs = std::experimental::filesystem;
 
 // simulates new version of binary
 void touch(const char *filename) {
-    using namespace std::literals::chrono_literals;
 
     fs::path p = filename;
     auto ftime = fs::last_write_time(p);
-    fs::last_write_time(p, ftime + 1s);
+    fs::last_write_time(p, ftime + std::chrono::seconds(1));
 }
 
 TEST(crTest, basic_flow) {

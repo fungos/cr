@@ -342,9 +342,11 @@ bool imui_init() {
 
 void imui_shutdown() {
     ImGui_ImplGlfwGL3_InvalidateDeviceObjects();
-    ImGui::Shutdown();
+#if !defined(IMGUI_GUEST_ONLY)
+    ImGui::Shutdown(g_data->imgui_context);
+#else
+    ImGui::Shutdown(g_imgui_context);
 
-#if defined(IMGUI_GUEST_ONLY)
     // Trying to get imgui to be 100% in guest context, not working right now.
     delete g_default_font_atlas;
     g_default_font_atlas = nullptr;
@@ -392,7 +394,7 @@ void imui_frame_begin() {
     // Setup inputs
     // (we already got mouse wheel, keyboard keys & characters from glfw callbacks polled in glfwPollEvents())
     if (g_data->get_window_attrib_fn(g_data->window, GLFW_FOCUSED)) {
-        if (io.WantMoveMouse) {
+        if (io.WantCaptureMouse) {
             g_data->set_cursor_pos_fn(g_data->window, (double)io.MousePos.x, (double)io.MousePos.y);   // Set mouse position if requested by io.WantMoveMouse flag (used when io.NavMovesTrue is enabled by user and using directional navigation)
         } else {
             double mouse_x, mouse_y;
@@ -449,7 +451,7 @@ void imui_draw() {
     // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
     if (show_test_window) {
         ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
-        ImGui::ShowTestWindow(&show_test_window);
+        ImGui::ShowDemoWindow(&show_test_window);
     }
 }
 

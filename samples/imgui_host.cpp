@@ -52,7 +52,6 @@ struct HostData {
 // do not need to care about storing/restoring them
 static HostData data;
 static GLFWwindow *window;
-static ImGuiContext g_imgui_context;
 
 // GLFW callbacks
 // You can also handle inputs yourself and use those as a reference.
@@ -80,9 +79,9 @@ static void ImGui_ImplGlfwGL3_SetClipboardText(void* user_data, const char* text
 
 void ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow*, int key, int, int action, int mods) {
     if (action == GLFW_PRESS)
-        g_imgui_context.IO.KeysDown[key] = true;
+        data.imgui_context->IO.KeysDown[key] = true;
     if (action == GLFW_RELEASE)
-        g_imgui_context.IO.KeysDown[key] = false;
+        data.imgui_context->IO.KeysDown[key] = false;
 }
 
 void ImGui_ImplGlfwGL3_CharCallback(GLFWwindow*, unsigned int c) {
@@ -125,7 +124,7 @@ int main(int argc, char **argv) {
     data.set_clipboard_fn = ImGui_ImplGlfwGL3_SetClipboardText;
     data.get_clipboard_fn = ImGui_ImplGlfwGL3_GetClipboardText;
     data.window = window;
-    data.imgui_context = &g_imgui_context;
+    data.imgui_context = ImGui::CreateContext();
 
     glfwSetMouseButtonCallback(window, ImGui_ImplGlfwGL3_MouseButtonCallback);
     glfwSetScrollCallback(window, ImGui_ImplGlfwGL3_ScrollCallback);
