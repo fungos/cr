@@ -9,7 +9,7 @@
 // and kept around to overwrite the new instance initial states. That means that things that were initialized in
 // a previous loaded states will continue from where they were.
 static unsigned int CR_STATE version = 1;
-// But unfortunately new added states in new instances (post the fact states) do not work because they will be 
+// But unfortunately new added states in new instances (post the fact states) do not work because they will be
 // overwritten by previous states (in this case, inexisting ones being zeroed), so uncommenting the following line
 // will have a value of zero.
 //static int32_t CR_STATE sad_state = 2;
@@ -27,7 +27,9 @@ void hello() {
         said_hello = true;
         fprintf(stdout, "hello world! ");
     }
-    fprintf(stdout, "y");
+    static int skip = 0;
+    if (++skip%50 == 0)
+	    fprintf(stdout, "y");
 }
 
 void test_crash() {

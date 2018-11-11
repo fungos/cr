@@ -4,6 +4,7 @@ language: cpp
 compiler: gcc
 os: 
     - linux
+    - osx
 addons:
   apt:
     sources:
@@ -17,10 +18,10 @@ addons:
       - libglu1-mesa-dev
       - xorg-dev
 script:
-    - sudo ln -s /usr/bin/gcc-7 /usr/local/bin/gcc
-    - sudo ln -s /usr/bin/g++-7 /usr/local/bin/g++
-    - export CC=/usr/bin/gcc-7
-    - export CXX=/usr/bin/g++-7
+    - if [¨$TRAVIS_OS_NAME¨ == ¨linux¨ ]; then sudo ln -s /usr/bin/gcc-7 /usr/local/bin/gcc
+    - if [¨$TRAVIS_OS_NAME¨ == ¨linux¨ ]; then sudo ln -s /usr/bin/g++-7 /usr/local/bin/g++
+    - if [¨$TRAVIS_OS_NAME¨ == ¨linux¨ ]; then export CC=/usr/bin/gcc-7
+    - if [¨$TRAVIS_OS_NAME¨ == ¨linux¨ ]; then export CXX=/usr/bin/g++-7
     - gcc -v && g++ -v && cmake --version
     - git --version
     # setup and check fips

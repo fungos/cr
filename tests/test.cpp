@@ -1,30 +1,35 @@
 #include <gtest/gtest.h>
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
 
 #define CR_HOST
 #include "../cr.h"
 #include "test_data.h"
 
-// simulates new version of binary
-void touch(const char *filename) {
+#if defined(CR_PLATFORM_WIN) || defined(CR_PLATFORM_LINUX)
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
 
+void touch(const char *filename) {
     fs::path p = filename;
     auto ftime = fs::last_write_time(p);
     fs::last_write_time(p, ftime + std::chrono::seconds(1));
 }
+#else
+void touch(const char *filename) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    char cmd[1024] = {};
+    snprintf(cmd, sizeof(cmd), "touch %s", filename);
+    system(cmd);
+}
+#endif
 
 TEST(crTest, basic_flow) {
-#if _WIN32
-    const char *bin = CR_DEPLOY_PATH "/test_basic.dll";
-#else
-    const char *bin = CR_DEPLOY_PATH "/libtest_basic.so";
-#endif
+    const char *bin = CR_DEPLOY_PATH "/" CR_PLUGIN("test_basic");
 
     using namespace test_basic;
     cr_plugin ctx;
     test_data data;
     ctx.userdata = &data;
+    // version 1
     EXPECT_EQ(true, cr_plugin_load(ctx, bin));
 
     data.test = test_id::return_version;
@@ -46,6 +51,7 @@ TEST(crTest, basic_flow) {
 
     // simulate a new compilation, causes unload
     // states should be saved as 1 and 12
+    // version 2
     touch(bin);
 
     // should reload and increment version
@@ -69,12 +75,17 @@ TEST(crTest, basic_flow) {
     EXPECT_EQ(0, cr_plugin_update(ctx));
 
     // emulate a segmentation fault trying to access nullptr
+    // crash version 2, it should rollback to version 1 because the version
+    // decrement happens within the crash handler
+    // version 1
     data.test = test_id::crash_update;
     EXPECT_EQ(-1, cr_plugin_update(ctx));
-    EXPECT_EQ((unsigned int)2, ctx.version);
+    EXPECT_EQ((unsigned int)1, ctx.version);
     EXPECT_EQ(CR_SEGFAULT, ctx.failure);
 
-    // next update should do a rollback, check version decrements
+    // next update should do a rollback, check we're still in version 1 and
+    // no further decrement happens
+    // version 1
     data.test = test_id::return_version;
     EXPECT_EQ(1, cr_plugin_update(ctx));
 
@@ -93,6 +104,7 @@ TEST(crTest, basic_flow) {
     EXPECT_EQ(0, cr_plugin_update(ctx));
 
     // recompile code
+    // a new version 2, hopefuly with the bug fixed!
     touch(bin);
 
     // should be a new version
@@ -117,25 +129,29 @@ TEST(crTest, basic_flow) {
     EXPECT_EQ(0, cr_plugin_update(ctx));
 
     // recompile code
+    // version 3
     touch(bin);
 
     // makes it crash during load
+    // crash handler automatically decrements the version
     data.test = test_id::crash_load;
     EXPECT_EQ(-2, cr_plugin_update(ctx));
-    EXPECT_EQ((unsigned int)3, ctx.version);
+    EXPECT_EQ((unsigned int)2, ctx.version);
     EXPECT_EQ(CR_SEGFAULT, ctx.failure);
 
-    // load crashed, so it should restore version 2
+    // load crashed, so it should be at version 2
     data.test = test_id::return_version;
     EXPECT_EQ(2, cr_plugin_update(ctx));
 
     // recompile code
+    // a new version 3 retry
     touch(bin);
 
     // force crash on unload
+    // but now the bug moved and crashed again, we're back to version 2
     data.test = test_id::crash_unload;
     EXPECT_EQ(-2, cr_plugin_update(ctx));
-    EXPECT_EQ((unsigned int)3, ctx.version);
+    EXPECT_EQ((unsigned int)2, ctx.version);
     EXPECT_EQ(CR_SEGFAULT, ctx.failure);
 
     // unload crashed, should still restore version 2

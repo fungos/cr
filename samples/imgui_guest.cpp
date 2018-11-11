@@ -64,7 +64,7 @@ void ImGui_ImplGlfwGL3_InvalidateDeviceObjects();
 bool ImGui_ImplGlfwGL3_CreateDeviceObjects();
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
-// Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so. 
+// Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so.
 // If text or lines are blurry when integrating ImGui in your engine: in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
 void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data) {
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
@@ -288,7 +288,7 @@ void ImGui_ImplGlfwGL3_InvalidateDeviceObjects() {
     }
 }
 
-// Some customization to use data from host, call glfw functions 
+// Some customization to use data from host, call glfw functions
 // in the glfw case it is an internal static variable that indicates it
 // is already initialized, so we must call glfw functions on the host
 // otherwise it will say it is not initialized (true in the dll context).
@@ -368,6 +368,8 @@ void imui_frame_begin() {
         ImGui_ImplGlfwGL3_CreateDeviceObjects();
 
     ImGuiIO& io = ImGui::GetIO();
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 
     // Proxy things from glfw to imgui
     for (int i = 0; g_data->inputCharacters[i]; ++i) {
@@ -394,15 +396,13 @@ void imui_frame_begin() {
     // Setup inputs
     // (we already got mouse wheel, keyboard keys & characters from glfw callbacks polled in glfwPollEvents())
     if (g_data->get_window_attrib_fn(g_data->window, GLFW_FOCUSED)) {
-        if (io.WantCaptureMouse) {
+        if (io.WantSetMousePos) {
             g_data->set_cursor_pos_fn(g_data->window, (double)io.MousePos.x, (double)io.MousePos.y);   // Set mouse position if requested by io.WantMoveMouse flag (used when io.NavMovesTrue is enabled by user and using directional navigation)
         } else {
             double mouse_x, mouse_y;
             g_data->get_cursor_pos_fn(g_data->window, &mouse_x, &mouse_y);
             io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);   // Get mouse position in screen coordinates (set to -1,-1 if no mouse / on another screen, etc.)
         }
-    } else {
-        io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
     }
 
     for (int i = 0; i < 3; i++) {
@@ -419,9 +419,18 @@ void imui_frame_begin() {
     ImGui::NewFrame();
 }
 
+void test_crash() {
+    ImGui::EndFrame();
+    int *addr = NULL; (void)addr; // warning
+    int i = *addr;
+    (void)i;
+}
+
 void imui_draw() {
     static bool CR_STATE show_test_window = true;
     static bool CR_STATE show_another_window = false;
+
+    //test_crash(); // uncomment to test crash protection
 
     // 1. Show a simple window
     // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"

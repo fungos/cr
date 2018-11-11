@@ -13,11 +13,7 @@
 #define CR_HOST CR_UNSAFE
 #include "../cr.h"
 
-#if _WIN32
-const char *plugin = CR_DEPLOY_PATH "/imgui_guest.dll";
-#else
-const char *plugin = CR_DEPLOY_PATH "/libimgui_guest.so";
-#endif
+const char *plugin = CR_DEPLOY_PATH "/" CR_PLUGIN("imgui_guest");
 
 // This HostData has too much stuff for the sample mostly because
 // glfw and imgui have static global state.

@@ -5,11 +5,7 @@
 #define CR_HOST CR_UNSAFE // try to best manage static states
 #include "../cr.h"
 
-#if _WIN32
-const char *plugin = CR_DEPLOY_PATH "/basic_guest.dll";
-#else
-const char *plugin = CR_DEPLOY_PATH "/libbasic_guest.so";
-#endif
+const char *plugin = CR_DEPLOY_PATH "/" CR_PLUGIN("basic_guest");
 
 int main(int argc, char *argv[]) {
     cr_plugin ctx;
@@ -19,7 +15,8 @@ int main(int argc, char *argv[]) {
 
     // call the plugin update function with the plugin context to execute it
     // at any frequency matters to you
-    while (!cr_plugin_update(ctx)) {
+    while (true) {
+        cr_plugin_update(ctx);
         fflush(stdout);
         fflush(stderr);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
