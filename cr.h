@@ -1030,7 +1030,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
 using so_handle = void *;
 
 static size_t cr_file_size(const std::string &path) {
-    struct stat stats {};
+    struct stat stats;
     if (stat(path.c_str(), &stats) == -1) {
         return 0;
     }
@@ -1038,7 +1038,7 @@ static size_t cr_file_size(const std::string &path) {
 }
 
 static time_t cr_last_write_time(const std::string &path) {
-    struct stat stats {};
+    struct stat stats;
     if (stat(path.c_str(), &stats) == -1) {
         return -1;
     }
