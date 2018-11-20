@@ -1717,13 +1717,14 @@ static void cr_plugin_reload(cr_plugin &ctx) {
 // frequently as your core logic/application needs. -1 and -2 are the only
 // possible return values from cr meaning a fatal error (causes rollback),
 // other return values are returned directly from `cr_main`.
-extern "C" int cr_plugin_update(cr_plugin &ctx) {
+extern "C" int cr_plugin_update(cr_plugin &ctx, bool check = true) {
     if (ctx.failure) {
         CR_LOG("1 ROLLBACK version was %d\n", ctx.version);
         cr_plugin_rollback(ctx);
         CR_LOG("1 ROLLBACK version is now %d\n", ctx.version);
     } else {
-        cr_plugin_reload(ctx);
+        if (check)
+            cr_plugin_reload(ctx);
     }
 
     // -2 to differentiate from crash handling code path, meaning the crash
