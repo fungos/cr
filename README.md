@@ -130,7 +130,7 @@ Return
 
 - `true` in case of success, `false` otherwise.
 
-#### `int cr_plugin_update(cr_plugin &ctx)`
+#### `int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true)`
 
 This function will call the plugin `cr_main` function. It should be called as
  frequently as the core logic/application needs.
@@ -138,6 +138,7 @@ This function will call the plugin `cr_main` function. It should be called as
 Arguments
 
 - `ctx` the current plugin context data.
+- `reloadCheck` optional: do a disk check (stat()) to see if the dynamic library needs a reload.
 
 Return
 
@@ -1037,7 +1038,7 @@ static size_t cr_file_size(const std::string &path) {
 }
 
 static time_t cr_last_write_time(const std::string &path) {
-    struct stat stats {};
+    struct stat stats;
     if (stat(path.c_str(), &stats) == -1) {
         return -1;
     }
@@ -1365,7 +1366,7 @@ static bool cr_plugin_validate_sections(cr_plugin &ctx, so_handle handle,
         break;
     }
 
-	return result;
+    return result;
 }
 
 #endif
@@ -1521,11 +1522,11 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
             return false;
         }
 
-        auto p = (cr_internal *)ctx.p;
-        p->handle = new_dll;
-        p->main = new_main;
+        auto p2 = (cr_internal *)ctx.p;
+        p2->handle = new_dll;
+        p2->main = new_main;
         if (ctx.failure != CR_BAD_IMAGE) {
-            p->timestamp = cr_last_write_time(file);
+            p2->timestamp = cr_last_write_time(file);
         }
         ctx.version++;
         CR_LOG("1 LOADED VERSION: %d\n", ctx.version);
@@ -1716,13 +1717,15 @@ static void cr_plugin_reload(cr_plugin &ctx) {
 // frequently as your core logic/application needs. -1 and -2 are the only
 // possible return values from cr meaning a fatal error (causes rollback),
 // other return values are returned directly from `cr_main`.
-extern "C" int cr_plugin_update(cr_plugin &ctx) {
+extern "C" int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true) {
     if (ctx.failure) {
         CR_LOG("1 ROLLBACK version was %d\n", ctx.version);
         cr_plugin_rollback(ctx);
         CR_LOG("1 ROLLBACK version is now %d\n", ctx.version);
     } else {
-        cr_plugin_reload(ctx);
+        if (reloadCheck) {
+            cr_plugin_reload(ctx);
+        }
     }
 
     // -2 to differentiate from crash handling code path, meaning the crash
