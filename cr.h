@@ -445,6 +445,7 @@ struct cr_plugin {
 #include <algorithm>
 #include <cassert> // assert
 #include <chrono>  // duration for sleep
+#include <cstring> // memcpy
 #include <string>
 #include <thread> // this_thread::sleep_for
 
