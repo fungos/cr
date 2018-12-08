@@ -1279,6 +1279,8 @@ static bool cr_plugin_validate_sections(cr_plugin &ctx, so_handle handle,
 #include <mach-o/dyld.h>
 #include <mach-o/getsect.h>
 #include <mach-o/ldsyms.h>
+#include <stdlib.h>     // realpath
+#include <limits.h>     // PATH_MAX
 
 #if __LP64__
 typedef struct mach_header_64 macho_hdr;
@@ -1324,10 +1326,18 @@ static bool cr_plugin_validate_sections(cr_plugin &ctx, so_handle handle,
     }
     CR_TRACE
 
+    // resolve absolute path of the image, because _dyld_get_image_name returns abs path
+    char imageAbsPath[PATH_MAX+1];
+    if (!::realpath(imagefile.c_str(), imageAbsPath)) {
+        assert(0 && "resolving absolute path for plugin failed");
+        return false;
+    }
+
     const int count = (int)_dyld_image_count();
     for (int i = 0; i < count; i++) {
         const char *name = _dyld_get_image_name(i);
-        if (strcasecmp(name, imagefile.c_str())) {
+
+        if (strcasecmp(name, imageAbsPath)) {
             // match loaded image filename
             continue;
         }
