@@ -8,7 +8,7 @@ A single file header-only live reload solution for C, written in C++:
 - automatic crash protection;
 - automatic static state transfer;
 - based on dynamic reloadable binary (.so/.dylib/.dll);
-- support multiple plugins[1];
+- support multiple plugins;
 - MIT licensed;
 
 ### Build Status:
@@ -267,6 +267,20 @@ With all these information you'll be able to decide which is better to your use 
 
 #### [MESH Consultants Inc.](http://meshconsultants.ca/)
 **For sponsoring the port of `cr` to the MacOSX.**
+
+### Contributors
+
+[Danny Grein](https://github.com/fungos)
+[Rokas Kupstys](https://github.com/rokups)
+[Noah Rinehart](https://github.com/noahrinehart)
+[Niklas Lundberg](https://github.com/datgame)
+[Sepehr Taghdisian](https://github.com/septag)
+
+### Contributing
+
+We welcome *ALL* contributions, there is no minor things to contribute with, even one letter typo fixes are welcome.
+The only things we require is to test thoroughly, maintain code style and keeping documentation up-to-date.
+Also, accepting and agreeing to release any contribution under the same license.
 
 ----
 
@@ -567,20 +581,6 @@ static std::wstring cr_utf8_to_wstring(const std::string &str) {
     }
 
     return wpath;
-}
-
-static size_t file_size(const std::string &path) {
-    std::wstring wpath = cr_utf8_to_wstring(path);
-    WIN32_FILE_ATTRIBUTE_DATA fad;
-    if (!GetFileAttributesExW(wpath.c_str(), GetFileExInfoStandard, &fad)) {
-        return -1;
-    }
-
-    LARGE_INTEGER size;
-    size.HighPart = fad.nFileSizeHigh;
-    size.LowPart = fad.nFileSizeLow;
-
-    return static_cast<size_t>(size.QuadPart);
 }
 
 static time_t cr_last_write_time(const std::string &path) {
@@ -950,7 +950,7 @@ static void cr_so_unload(cr_plugin &ctx) {
     FreeLibrary((HMODULE)p->handle);
 }
 
-static so_handle cr_so_load(cr_plugin &ctx, const std::string &filename) {
+static so_handle cr_so_load(const std::string &filename) {
     auto new_dll = LoadLibrary(filename.c_str());
     if (!new_dll) {
         fprintf(stderr, "Couldn't load plugin: %d\n", GetLastError());
@@ -1397,7 +1397,7 @@ static void cr_so_unload(cr_plugin &ctx) {
     p->main = nullptr;
 }
 
-static so_handle cr_so_load(cr_plugin &ctx, const std::string &new_file) {
+static so_handle cr_so_load(const std::string &new_file) {
     dlerror();
     auto new_dll = dlopen(new_file.c_str(), RTLD_NOW);
     if (!new_dll) {
@@ -1507,7 +1507,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
 #endif // defined(_MSC_VER)
         }
 
-        auto new_dll = cr_so_load(ctx, new_file);
+        auto new_dll = cr_so_load(new_file);
         if (!new_dll) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             // we may want set a failure reason and avoid sleeping ourselves.
