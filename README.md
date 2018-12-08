@@ -270,15 +270,21 @@ With all these information you'll be able to decide which is better to your use 
 ### Contributors
 
 [Danny Grein](https://github.com/fungos)
+
 [Rokas Kupstys](https://github.com/rokups)
+
 [Noah Rinehart](https://github.com/noahrinehart)
+
 [Niklas Lundberg](https://github.com/datgame)
+
 [Sepehr Taghdisian](https://github.com/septag)
 
 ### Contributing
 
 We welcome *ALL* contributions, there is no minor things to contribute with, even one letter typo fixes are welcome.
+
 The only things we require is to test thoroughly, maintain code style and keeping documentation up-to-date.
+
 Also, accepting and agreeing to release any contribution under the same license.
 
 ----
