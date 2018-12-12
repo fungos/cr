@@ -665,8 +665,7 @@ static void cr_copy(const std::string &from, const std::string &to) {
     CopyFileW(wfrom.c_str(), wto.c_str(), false);
 }
 
-static void cr_del(const std::string& path)
-{   
+static void cr_del(const std::string& path) {   
     std::wstring wpath = cr_utf8_to_wstring(path);
     DeleteFileW(wpath.c_str());
 }
@@ -1135,8 +1134,7 @@ static void cr_copy(const std::string &from, const std::string &to) {
     fclose(destination);
 }
 
-static void cr_del(const std::string& path)
-{
+static void cr_del(const std::string& path) {
     unlink(path.c_str());
 }
 
