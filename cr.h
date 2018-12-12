@@ -665,6 +665,11 @@ static void cr_copy(const std::string &from, const std::string &to) {
     CopyFileW(wfrom.c_str(), wto.c_str(), false);
 }
 
+static void cr_del(const std::string& path) {   
+    std::wstring wpath = cr_utf8_to_wstring(path);
+    DeleteFileW(wpath.c_str());
+}
+
 // If using Microsoft Visual C/C++ compiler we need to do some workaround the
 // fact that the compiled binary has a fullpath to the PDB hardcoded inside
 // it. This causes a lot of headaches when trying compile while debugging as
@@ -1127,6 +1132,10 @@ static void cr_copy(const std::string &from, const std::string &to) {
 
     fclose(source);
     fclose(destination);
+}
+
+static void cr_del(const std::string& path) {
+    unlink(path.c_str());
 }
 
 // unix,internal
@@ -1830,6 +1839,16 @@ extern "C" void cr_plugin_close(cr_plugin &ctx) {
     cr_plugin_unload(ctx, rollback, close);
     cr_so_sections_free(ctx);
     auto p = (cr_internal *)ctx.p;
+
+    // delete backups
+    const auto file = p->fullname;
+    for (unsigned int i = 0; i < ctx.version; i++) {
+        cr_del(cr_version_path(file, i));
+#if defined(_WIN32)
+        cr_del(cr_replace_extension(cr_version_path(file, i), ".pdb"));
+#endif
+    }
+
     p->~cr_internal();
     CR_FREE(p);
     ctx.p = nullptr;
