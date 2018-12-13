@@ -239,6 +239,7 @@ You can define these macros before including cr.h in host (CR_HOST) to customize
 - `CR_DEBUG`: outputs debug messages in CR_LOG and CR_TRACE 
 - `CR_LOG`: logs debug messages. default (CR_DEBUG only): #define CR_LOG(...) fprintf(stdout, __VA_ARGS__)
 - `CR_TRACE`: prints function calls. default (CR_DEBUG only): #define CR_TRACE(...) fprintf(stdout, "CR_TRACE: %s\n", __FUNCTION__)
+- `CR_WINDOWS_UTF8_PATHS`: on windows platform, set this to zero to restrict the api to ascii file paths only (for better performance). (default: 1)
 
 ### FAQ / Troubleshooting
 
@@ -496,6 +497,10 @@ struct cr_plugin {
 #   define CR_MALLOC(size)         ::malloc(size)
 #endif
 
+#ifndef CR_WINDOWS_UTF8_PATHS
+#   define CR_WINDOWS_UTF8_PATHS    1
+#endif
+
 #if defined(_MSC_VER)
 // we should probably push and pop this
 #   pragma warning(disable:4003) // not enough actual parameters for macro 'identifier'
@@ -611,6 +616,9 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
 #if defined(CR_WINDOWS)
 
 // clang-format off
+#ifndef WIN32_LEAN_AND_MEAN
+#   define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <dbghelp.h>
 // clang-format on
@@ -619,6 +627,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
 
 using so_handle = HMODULE;
 
+#if CR_WINDOWS_UTF8_PATHS
 static std::wstring cr_utf8_to_wstring(const std::string &str) {
     int wlen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, 0, 0);
     wchar_t wpath_small[MAX_PATH];
@@ -669,6 +678,32 @@ static void cr_del(const std::string& path) {
     std::wstring wpath = cr_utf8_to_wstring(path);
     DeleteFileW(wpath.c_str());
 }
+#else
+static time_t cr_last_write_time(const std::string &path) {
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    if (!GetFileAttributesExA(path.c_str(), GetFileExInfoStandard, &fad)) {
+        return -1;
+    }
+
+    LARGE_INTEGER time;
+    time.HighPart = fad.ftLastWriteTime.dwHighDateTime;
+    time.LowPart = fad.ftLastWriteTime.dwLowDateTime;
+
+    return static_cast<time_t>(time.QuadPart / 10000000 - 11644473600LL);
+}
+
+static bool cr_exists(const std::string &path) {
+    return GetFileAttributesA(path.c_str()) != INVALID_FILE_ATTRIBUTES;
+}
+
+static void cr_copy(const std::string &from, const std::string &to) {
+    CopyFileA(from.c_str(), to.c_str(), false);
+}
+
+static void cr_del(const std::string& path) {
+    DeleteFileA(path.c_str());
+}
+#endif // CR_WINDOWS_UTF8_PATHS
 
 // If using Microsoft Visual C/C++ compiler we need to do some workaround the
 // fact that the compiled binary has a fullpath to the PDB hardcoded inside
