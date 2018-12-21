@@ -579,10 +579,18 @@ static std::string cr_version_path(const std::string &basepath,
     std::string folder, fname, ext;
     cr_split_path(basepath, folder, fname, ext);
     std::string ver = std::to_string(version);
+#if _MSC_VER
+    // When patching PDB file path in library file we will drop path and leave only file name.
+    // Length of path is extra space for version number. Trim file name only if version number
+    // length exceeds pdb folder path length. This is not relevant on other platforms.
+    if (ver.size() > folder.size()) {
+        fname = fname.substr(0, fname.size() - (ver.size() - folder.size()));
+    }    
+#endif
     if (!temppath.empty()) {
         folder = temppath;
     }
-    return folder + fname.substr(0, fname.size() - ver.size()) + ver + ext;
+    return folder + fname + ver + ext;
 }
 
 namespace cr_plugin_section_type {
@@ -834,10 +842,8 @@ static char *cr_pdb_find(LPBYTE imageBase, PIMAGE_DEBUG_DIRECTORY debugDir) {
     return nullptr;
 }
 
-static bool cr_pdb_replace(const std::string &filename,
-                           const std::string &pdbname, char *pdbnamebuf,
-                           int pdbnamelen) {
-    CR_ASSERT(pdbnamebuf);
+static bool cr_pdb_replace(const std::string &filename, const std::string &pdbname,
+                           std::string &orig_pdb) {
     CR_WINDOWS_ConvertPath(_filename, filename);
 
     HANDLE fp = nullptr;
@@ -947,12 +953,13 @@ static bool cr_pdb_replace(const std::string &filename,
 
         for (int i = 1; i <= numEntries; i++, debugDir++) {
             char *pdb = cr_pdb_find((LPBYTE)mem, debugDir);
-            if (pdb && strlen(pdb) >= strlen(pdbname.c_str())) {
+            if (pdb) {
                 auto len = strlen(pdb);
-                memcpy_s(pdbnamebuf, pdbnamelen, pdb, len);
-                std::memset(pdb, '\0', len);
-                memcpy_s(pdb, len, pdbname.c_str(), pdbname.length());
-                result = true;
+                if (len >= strlen(pdbname.c_str())) {
+                    orig_pdb = pdb;
+                    memcpy_s(pdb, len, pdbname.c_str(), pdbname.length());
+                    result = true;
+                }
             }
         }
     } while (0);
@@ -972,12 +979,12 @@ static bool cr_pdb_replace(const std::string &filename,
     return result;
 }
 
-bool static cr_pdb_process(const std::string &filename,
-                           const std::string &pdbname) {
-    char orig_pdb[MAX_PATH];
-    memset(orig_pdb, 0, sizeof(orig_pdb));
-    bool result = cr_pdb_replace(filename, pdbname, orig_pdb, sizeof(orig_pdb));
-    result &= cr_copy(orig_pdb, pdbname);
+bool static cr_pdb_process(const std::string &source,
+                           const std::string &desination) {
+    std::string folder, fname, ext, orig_pdb;
+    cr_split_path(desination, folder, fname, ext);
+    bool result = cr_pdb_replace(desination, fname + ".pdb", orig_pdb);
+    result &= cr_copy(orig_pdb, cr_replace_extension(desination, ".pdb"));
     return result;
 }
 #endif // _MSC_VER
@@ -1611,11 +1618,9 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
             cr_copy(file, new_file);
 
 #if defined(_MSC_VER)
-            auto new_pdb = cr_replace_extension(new_file, ".pdb");
-
-            if (!cr_pdb_process(new_file, new_pdb)) {
+            if (!cr_pdb_process(file, new_file)) {
                 CR_ERROR("Couldn't process PDB, debugging may be "
-                                "affected and/or reload may fail\n");
+                         "affected and/or reload may fail\n");
             }
 #endif // defined(_MSC_VER)
         }
