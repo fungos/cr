@@ -236,7 +236,8 @@ You can define these macros before including cr.h in host (CR_HOST) to customize
 - `CR_REALLOC`: override libc's realloc. default: #define CR_REALLOC(ptr, size) ::realloc(ptr, size)
 - `CR_MALLOC`: override libc's malloc. default: #define CR_MALLOC(size) ::malloc(size)
 - `CR_FREE`: override libc's free. default: #define CR_FREE(ptr) ::free(ptr)
-- `CR_DEBUG`: outputs debug messages in CR_LOG and CR_TRACE 
+- `CR_DEBUG`: outputs debug messages in CR_ERROR, CR_LOG and CR_TRACE
+- `CR_ERROR`: logs debug messages to stderr. default (CR_DEBUG only): #define CR_ERROR(...) fprintf(stderr, __VA_ARGS__)
 - `CR_LOG`: logs debug messages. default (CR_DEBUG only): #define CR_LOG(...) fprintf(stdout, __VA_ARGS__)
 - `CR_TRACE`: prints function calls. default (CR_DEBUG only): #define CR_TRACE(...) fprintf(stdout, "CR_TRACE: %s\n", __FUNCTION__)
 
@@ -460,6 +461,15 @@ struct cr_plugin {
 #       define CR_LOG(...)     fprintf(stdout, __VA_ARGS__)
 #   else
 #       define CR_LOG(...)     
+#   endif
+#endif
+
+#ifndef CR_ERROR
+#   ifdef CR_DEBUG
+#       include <stdio.h>
+#       define CR_ERROR(...)     fprintf(stderr, __VA_ARGS__)
+#   else
+#       define CR_ERROR(...)
 #   endif
 #endif
 
@@ -1011,7 +1021,7 @@ static void cr_so_unload(cr_plugin &ctx) {
 static so_handle cr_so_load(const std::string &filename) {
     auto new_dll = LoadLibrary(filename.c_str());
     if (!new_dll) {
-        fprintf(stderr, "Couldn't load plugin: %d\n", GetLastError());
+        CR_ERROR("Couldn't load plugin: %d\n", GetLastError());
     }
     return new_dll;
 }
@@ -1020,7 +1030,7 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     CR_ASSERT(handle);
     auto new_main = (cr_plugin_main_func)GetProcAddress(handle, CR_MAIN_FUNC);
     if (!new_main) {
-        fprintf(stderr, "Couldn't find plugin entry point: %d\n",
+        CR_ERROR("Couldn't find plugin entry point: %d\n",
                 GetLastError());
     }
     return new_main;
@@ -1452,7 +1462,7 @@ static void cr_so_unload(cr_plugin &ctx) {
 
     const int r = dlclose(p->handle);
     if (r) {
-        fprintf(stderr, "Error closing plugin: %d\n", r);
+        CR_ERROR("Error closing plugin: %d\n", r);
     }
 
     p->handle = nullptr;
@@ -1463,7 +1473,7 @@ static so_handle cr_so_load(const std::string &new_file) {
     dlerror();
     auto new_dll = dlopen(new_file.c_str(), RTLD_NOW);
     if (!new_dll) {
-        fprintf(stderr, "Couldn't load plugin: %s\n", dlerror());
+        CR_ERROR("Couldn't load plugin: %s\n", dlerror());
     }
     return new_dll;
 }
@@ -1473,7 +1483,7 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     dlerror();
     auto new_main = (cr_plugin_main_func)dlsym(handle, CR_MAIN_FUNC);
     if (!new_main) {
-        fprintf(stderr, "Couldn't find plugin entry point: %s\n", dlerror());
+        CR_ERROR("Couldn't find plugin entry point: %s\n", dlerror());
     }
     return new_main;
 }
@@ -1498,16 +1508,16 @@ static void cr_plat_init() {
 #endif
 
     if (sigaction(SIGILL, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGILL handler\n");
+        CR_ERROR("Failed to setup SIGILL handler\n");
     }
     if (sigaction(SIGBUS, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGBUS handler\n");
+        CR_ERROR("Failed to setup SIGBUS handler\n");
     }
     if (sigaction(SIGSEGV, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGSEGV handler\n");
+        CR_ERROR("Failed to setup SIGSEGV handler\n");
     }
     if (sigaction(SIGABRT, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGABRT handler\n");
+        CR_ERROR("Failed to setup SIGABRT handler\n");
     }
 }
 
@@ -1563,7 +1573,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
             auto new_pdb = cr_replace_extension(new_file, ".pdb");
 
             if (!cr_pdb_process(new_file, new_pdb)) {
-                fprintf(stderr, "Couldn't process PDB, debugging may be "
+                CR_ERROR("Couldn't process PDB, debugging may be "
                                 "affected and/or reload may fail\n");
             }
 #endif // defined(_MSC_VER)
@@ -1605,7 +1615,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         ctx.version++;
         CR_LOG("loaded: %s (version: %d)\n", new_file.c_str(), ctx.version);
     } else {
-        fprintf(stderr, "Error loading plugin.\n");
+        CR_ERROR("Error loading plugin.\n");
         return false;
     }
     return true;
