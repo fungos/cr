@@ -131,6 +131,17 @@ Return
 
 - `true` in case of success, `false` otherwise.
 
+#### `void cr_set_temporary_path(cr_plugin& ctx, const std::string &path)`
+
+Sets temporary path to which temporary copies of plugin will be placed. Should be called
+immediately after `cr_plugin_load()`. If `temporary` path is not set, temporary copies of
+the file will be copied to the same directory where the original file is located.
+
+Arguments
+
+- `ctx` a context that will manage the plugin internal data and user data.
+- `path` a full path to an existing directory which will be used for storing temporary plugin copies.
+
 #### `int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true)`
 
 This function will call the plugin `cr_main` function. It should be called as
@@ -563,10 +574,14 @@ static void cr_split_path(std::string path, std::string &parent_dir,
 }
 
 static std::string cr_version_path(const std::string &basepath,
-                                   unsigned version) {
+                                   unsigned version,
+                                   const std::string &temppath) {
     std::string folder, fname, ext;
     cr_split_path(basepath, folder, fname, ext);
     std::string ver = std::to_string(version);
+    if (!temppath.empty()) {
+        folder = temppath;
+    }
     return folder + fname.substr(0, fname.size() - ver.size()) + ver + ext;
 }
 
@@ -595,6 +610,7 @@ struct cr_plugin_segment {
 // with by user
 struct cr_internal {
     std::string fullname = {};
+    std::string temppath = {};
     time_t timestamp = {};
     void *handle = nullptr;
     cr_plugin_main_func main = nullptr;
@@ -617,6 +633,11 @@ static void cr_plugin_unload(cr_plugin &ctx, bool rollback, bool close);
 static bool cr_plugin_changed(cr_plugin &ctx);
 static bool cr_plugin_rollback(cr_plugin &ctx);
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
+
+static void cr_set_temporary_path(cr_plugin &ctx, const std::string &path) {
+    auto pimpl = (cr_internal *)ctx.p;
+    pimpl->temppath = path;
+}
 
 #if defined(CR_WINDOWS)
 
@@ -672,7 +693,7 @@ static bool cr_exists(const std::string &path) {
 static bool cr_copy(const std::string &from, const std::string &to) {
     std::wstring wfrom = cr_utf8_to_wstring(from);
     std::wstring wto = cr_utf8_to_wstring(to);
-    return CopyFileW(wfrom.c_str(), wto.c_str(), false) != FALSE;
+    return CopyFileW(wfrom.c_str(), wto.c_str(), false) != false;
 }
 
 static void cr_del(const std::string& path) {   
@@ -1569,7 +1590,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
     auto p = (cr_internal *)ctx.p;
     const auto file = p->fullname;
     if (cr_exists(file) || rollback) {
-        const auto new_file = cr_version_path(file, ctx.version);
+        const auto new_file = cr_version_path(file, ctx.version, p->temppath);
 
         const bool close = false;
         CR_LOG("unload '%s' with rollback: %d\n", file.c_str(), rollback);
@@ -1861,9 +1882,9 @@ extern "C" void cr_plugin_close(cr_plugin &ctx) {
     // delete backups
     const auto file = p->fullname;
     for (unsigned int i = 0; i < ctx.version; i++) {
-        cr_del(cr_version_path(file, i));
+        cr_del(cr_version_path(file, i, p->temppath));
 #if defined(_WIN32)
-        cr_del(cr_replace_extension(cr_version_path(file, i), ".pdb"));
+        cr_del(cr_replace_extension(cr_version_path(file, i, p->temppath), ".pdb"));
 #endif
     }
 
