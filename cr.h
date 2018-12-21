@@ -669,10 +669,10 @@ static bool cr_exists(const std::string &path) {
     return GetFileAttributesW(wpath.c_str()) != INVALID_FILE_ATTRIBUTES;
 }
 
-static void cr_copy(const std::string &from, const std::string &to) {
+static bool cr_copy(const std::string &from, const std::string &to) {
     std::wstring wfrom = cr_utf8_to_wstring(from);
     std::wstring wto = cr_utf8_to_wstring(to);
-    CopyFileW(wfrom.c_str(), wto.c_str(), false);
+    return CopyFileW(wfrom.c_str(), wto.c_str(), false) != FALSE;
 }
 
 static void cr_del(const std::string& path) {   
@@ -1129,12 +1129,19 @@ static bool cr_exists(const std::string &path) {
     return stat(path.c_str(), &stats) != -1;
 }
 
-static void cr_copy(const std::string &from, const std::string &to) {
+static bool cr_copy(const std::string &from, const std::string &to) {
     char buffer[BUFSIZ];
     size_t size;
 
     FILE *source = fopen(from.c_str(), "rb");
+    if (source == nullptr) {
+        return false;
+    }
     FILE *destination = fopen(to.c_str(), "wb");
+    if (destination == nullptr) {
+        fclose(source);
+        return false;
+    }
 
     while ((size = fread(buffer, 1, BUFSIZ, source)) != 0) {
         fwrite(buffer, 1, size, destination);
@@ -1142,6 +1149,7 @@ static void cr_copy(const std::string &from, const std::string &to) {
 
     fclose(source);
     fclose(destination);
+    return true;
 }
 
 static void cr_del(const std::string& path) {
