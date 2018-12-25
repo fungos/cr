@@ -131,6 +131,17 @@ Return
 
 - `true` in case of success, `false` otherwise.
 
+#### `void cr_set_temporary_path(cr_plugin& ctx, const std::string &path)`
+
+Sets temporary path to which temporary copies of plugin will be placed. Should be called
+immediately after `cr_plugin_load()`. If `temporary` path is not set, temporary copies of
+the file will be copied to the same directory where the original file is located.
+
+Arguments
+
+- `ctx` a context that will manage the plugin internal data and user data.
+- `path` a full path to an existing directory which will be used for storing temporary plugin copies.
+
 #### `int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true)`
 
 This function will call the plugin `cr_main` function. It should be called as
@@ -236,7 +247,8 @@ You can define these macros before including cr.h in host (CR_HOST) to customize
 - `CR_REALLOC`: override libc's realloc. default: #define CR_REALLOC(ptr, size) ::realloc(ptr, size)
 - `CR_MALLOC`: override libc's malloc. default: #define CR_MALLOC(size) ::malloc(size)
 - `CR_FREE`: override libc's free. default: #define CR_FREE(ptr) ::free(ptr)
-- `CR_DEBUG`: outputs debug messages in CR_LOG and CR_TRACE 
+- `CR_DEBUG`: outputs debug messages in CR_ERROR, CR_LOG and CR_TRACE
+- `CR_ERROR`: logs debug messages to stderr. default (CR_DEBUG only): #define CR_ERROR(...) fprintf(stderr, __VA_ARGS__)
 - `CR_LOG`: logs debug messages. default (CR_DEBUG only): #define CR_LOG(...) fprintf(stdout, __VA_ARGS__)
 - `CR_TRACE`: prints function calls. default (CR_DEBUG only): #define CR_TRACE(...) fprintf(stdout, "CR_TRACE: %s\n", __FUNCTION__)
 - `CR_WINDOWS_UTF8_PATHS`: on windows platform, set this to zero to restrict the api to ascii file paths only (for better performance). (default: 1)
@@ -464,6 +476,15 @@ struct cr_plugin {
 #   endif
 #endif
 
+#ifndef CR_ERROR
+#   ifdef CR_DEBUG
+#       include <stdio.h>
+#       define CR_ERROR(...)     fprintf(stderr, __VA_ARGS__)
+#   else
+#       define CR_ERROR(...)
+#   endif
+#endif
+
 #ifndef CR_TRACE
 #   ifdef CR_DEBUG
 #       include <stdio.h>
@@ -558,10 +579,14 @@ static void cr_split_path(std::string path, std::string &parent_dir,
 }
 
 static std::string cr_version_path(const std::string &basepath,
-                                   unsigned version) {
+                                   unsigned version,
+                                   const std::string &temppath) {
     std::string folder, fname, ext;
     cr_split_path(basepath, folder, fname, ext);
     std::string ver = std::to_string(version);
+    if (!temppath.empty()) {
+        folder = temppath;
+    }
     return folder + fname.substr(0, fname.size() - ver.size()) + ver + ext;
 }
 
@@ -590,6 +615,7 @@ struct cr_plugin_segment {
 // with by user
 struct cr_internal {
     std::string fullname = {};
+    std::string temppath = {};
     time_t timestamp = {};
     void *handle = nullptr;
     cr_plugin_main_func main = nullptr;
@@ -612,6 +638,11 @@ static void cr_plugin_unload(cr_plugin &ctx, bool rollback, bool close);
 static bool cr_plugin_changed(cr_plugin &ctx);
 static bool cr_plugin_rollback(cr_plugin &ctx);
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
+
+static void cr_set_temporary_path(cr_plugin &ctx, const std::string &path) {
+    auto pimpl = (cr_internal *)ctx.p;
+    pimpl->temppath = path;
+}
 
 #if defined(CR_WINDOWS)
 
@@ -668,10 +699,10 @@ static bool cr_exists(const std::string &path) {
     return GetFileAttributesW(wpath.c_str()) != INVALID_FILE_ATTRIBUTES;
 }
 
-static void cr_copy(const std::string &from, const std::string &to) {
+static bool cr_copy(const std::string &from, const std::string &to) {
     std::wstring wfrom = cr_utf8_to_wstring(from);
     std::wstring wto = cr_utf8_to_wstring(to);
-    CopyFileW(wfrom.c_str(), wto.c_str(), false);
+    return CopyFileW(wfrom.c_str(), wto.c_str(), false) != false;
 }
 
 static void cr_del(const std::string& path) {   
@@ -1046,7 +1077,7 @@ static void cr_so_unload(cr_plugin &ctx) {
 static so_handle cr_so_load(const std::string &filename) {
     auto new_dll = LoadLibrary(filename.c_str());
     if (!new_dll) {
-        fprintf(stderr, "Couldn't load plugin: %d\n", GetLastError());
+        CR_ERROR("Couldn't load plugin: %d\n", GetLastError());
     }
     return new_dll;
 }
@@ -1055,7 +1086,7 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     CR_ASSERT(handle);
     auto new_main = (cr_plugin_main_func)GetProcAddress(handle, CR_MAIN_FUNC);
     if (!new_main) {
-        fprintf(stderr, "Couldn't find plugin entry point: %d\n",
+        CR_ERROR("Couldn't find plugin entry point: %d\n",
                 GetLastError());
     }
     return new_main;
@@ -1154,12 +1185,19 @@ static bool cr_exists(const std::string &path) {
     return stat(path.c_str(), &stats) != -1;
 }
 
-static void cr_copy(const std::string &from, const std::string &to) {
+static bool cr_copy(const std::string &from, const std::string &to) {
     char buffer[BUFSIZ];
     size_t size;
 
     FILE *source = fopen(from.c_str(), "rb");
+    if (source == nullptr) {
+        return false;
+    }
     FILE *destination = fopen(to.c_str(), "wb");
+    if (destination == nullptr) {
+        fclose(source);
+        return false;
+    }
 
     while ((size = fread(buffer, 1, BUFSIZ, source)) != 0) {
         fwrite(buffer, 1, size, destination);
@@ -1167,6 +1205,7 @@ static void cr_copy(const std::string &from, const std::string &to) {
 
     fclose(source);
     fclose(destination);
+    return true;
 }
 
 static void cr_del(const std::string& path) {
@@ -1487,7 +1526,7 @@ static void cr_so_unload(cr_plugin &ctx) {
 
     const int r = dlclose(p->handle);
     if (r) {
-        fprintf(stderr, "Error closing plugin: %d\n", r);
+        CR_ERROR("Error closing plugin: %d\n", r);
     }
 
     p->handle = nullptr;
@@ -1498,7 +1537,7 @@ static so_handle cr_so_load(const std::string &new_file) {
     dlerror();
     auto new_dll = dlopen(new_file.c_str(), RTLD_NOW);
     if (!new_dll) {
-        fprintf(stderr, "Couldn't load plugin: %s\n", dlerror());
+        CR_ERROR("Couldn't load plugin: %s\n", dlerror());
     }
     return new_dll;
 }
@@ -1508,7 +1547,7 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     dlerror();
     auto new_main = (cr_plugin_main_func)dlsym(handle, CR_MAIN_FUNC);
     if (!new_main) {
-        fprintf(stderr, "Couldn't find plugin entry point: %s\n", dlerror());
+        CR_ERROR("Couldn't find plugin entry point: %s\n", dlerror());
     }
     return new_main;
 }
@@ -1533,16 +1572,16 @@ static void cr_plat_init() {
 #endif
 
     if (sigaction(SIGILL, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGILL handler\n");
+        CR_ERROR("Failed to setup SIGILL handler\n");
     }
     if (sigaction(SIGBUS, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGBUS handler\n");
+        CR_ERROR("Failed to setup SIGBUS handler\n");
     }
     if (sigaction(SIGSEGV, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGSEGV handler\n");
+        CR_ERROR("Failed to setup SIGSEGV handler\n");
     }
     if (sigaction(SIGABRT, &sa, nullptr) == -1) {
-        fprintf(stderr, "Failed to setup SIGABRT handler\n");
+        CR_ERROR("Failed to setup SIGABRT handler\n");
     }
 }
 
@@ -1586,7 +1625,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
     auto p = (cr_internal *)ctx.p;
     const auto file = p->fullname;
     if (cr_exists(file) || rollback) {
-        const auto new_file = cr_version_path(file, ctx.version);
+        const auto new_file = cr_version_path(file, ctx.version, p->temppath);
 
         const bool close = false;
         CR_LOG("unload '%s' with rollback: %d\n", file.c_str(), rollback);
@@ -1598,7 +1637,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
             auto new_pdb = cr_replace_extension(new_file, ".pdb");
 
             if (!cr_pdb_process(new_file, new_pdb)) {
-                fprintf(stderr, "Couldn't process PDB, debugging may be "
+                CR_ERROR("Couldn't process PDB, debugging may be "
                                 "affected and/or reload may fail\n");
             }
 #endif // defined(_MSC_VER)
@@ -1640,7 +1679,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         ctx.version++;
         CR_LOG("loaded: %s (version: %d)\n", new_file.c_str(), ctx.version);
     } else {
-        fprintf(stderr, "Error loading plugin.\n");
+        CR_ERROR("Error loading plugin.\n");
         return false;
     }
     return true;
@@ -1878,9 +1917,9 @@ extern "C" void cr_plugin_close(cr_plugin &ctx) {
     // delete backups
     const auto file = p->fullname;
     for (unsigned int i = 0; i < ctx.version; i++) {
-        cr_del(cr_version_path(file, i));
+        cr_del(cr_version_path(file, i, p->temppath));
 #if defined(_WIN32)
-        cr_del(cr_replace_extension(cr_version_path(file, i), ".pdb"));
+        cr_del(cr_replace_extension(cr_version_path(file, i, p->temppath), ".pdb"));
 #endif
     }
 
