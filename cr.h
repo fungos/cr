@@ -642,6 +642,9 @@ static void cr_set_temporary_path(cr_plugin &ctx, const std::string &path) {
 #if defined(CR_WINDOWS)
 
 // clang-format off
+#ifndef WIN32_LEAN_AND_MEAN
+#   define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <dbghelp.h>
 // clang-format on
@@ -649,6 +652,9 @@ static void cr_set_temporary_path(cr_plugin &ctx, const std::string &path) {
 #pragma comment(lib, "dbghelp.lib")
 
 using so_handle = HMODULE;
+
+#ifdef UNICODE
+#   define CR_WINDOWS_ConvertPath(_newpath, _path)     std::wstring _newpath(cr_utf8_to_wstring(_path))
 
 static std::wstring cr_utf8_to_wstring(const std::string &str) {
     int wlen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, 0, 0);
@@ -666,11 +672,14 @@ static std::wstring cr_utf8_to_wstring(const std::string &str) {
 
     return wpath;
 }
+#else
+#   define CR_WINDOWS_ConvertPath(_newpath, _path)     const std::string &_newpath = _path
+#endif  // UNICODE
 
 static time_t cr_last_write_time(const std::string &path) {
-    std::wstring wpath = cr_utf8_to_wstring(path);
+    CR_WINDOWS_ConvertPath(_path, path);
     WIN32_FILE_ATTRIBUTE_DATA fad;
-    if (!GetFileAttributesExW(wpath.c_str(), GetFileExInfoStandard, &fad)) {
+    if (!GetFileAttributesEx(_path.c_str(), GetFileExInfoStandard, &fad)) {
         return -1;
     }
 
@@ -686,19 +695,19 @@ static time_t cr_last_write_time(const std::string &path) {
 }
 
 static bool cr_exists(const std::string &path) {
-    std::wstring wpath = cr_utf8_to_wstring(path);
-    return GetFileAttributesW(wpath.c_str()) != INVALID_FILE_ATTRIBUTES;
+    CR_WINDOWS_ConvertPath(_path, path);
+    return GetFileAttributes(_path.c_str()) != INVALID_FILE_ATTRIBUTES;
 }
 
 static bool cr_copy(const std::string &from, const std::string &to) {
-    std::wstring wfrom = cr_utf8_to_wstring(from);
-    std::wstring wto = cr_utf8_to_wstring(to);
-    return CopyFileW(wfrom.c_str(), wto.c_str(), false) != false;
+    CR_WINDOWS_ConvertPath(_from, from);
+    CR_WINDOWS_ConvertPath(_to, to);
+    return CopyFile(_from.c_str(), _to.c_str(), FALSE) ? true : false;
 }
 
 static void cr_del(const std::string& path) {   
-    std::wstring wpath = cr_utf8_to_wstring(path);
-    DeleteFileW(wpath.c_str());
+    CR_WINDOWS_ConvertPath(_path, path);
+    DeleteFile(_path.c_str());
 }
 
 // If using Microsoft Visual C/C++ compiler we need to do some workaround the
@@ -829,12 +838,14 @@ static bool cr_pdb_replace(const std::string &filename,
                            const std::string &pdbname, char *pdbnamebuf,
                            int pdbnamelen) {
     CR_ASSERT(pdbnamebuf);
+    CR_WINDOWS_ConvertPath(_filename, filename);
+
     HANDLE fp = nullptr;
     HANDLE filemap = nullptr;
     LPVOID mem = 0;
     bool result = false;
     do {
-        fp = CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE,
+        fp = CreateFile(_filename.c_str(), GENERIC_READ | GENERIC_WRITE,
                         FILE_SHARE_READ, nullptr, OPEN_EXISTING,
                         FILE_ATTRIBUTE_NORMAL, nullptr);
         if ((fp == INVALID_HANDLE_VALUE) || (fp == nullptr)) {
@@ -966,7 +977,7 @@ bool static cr_pdb_process(const std::string &filename,
     char orig_pdb[MAX_PATH];
     memset(orig_pdb, 0, sizeof(orig_pdb));
     bool result = cr_pdb_replace(filename, pdbname, orig_pdb, sizeof(orig_pdb));
-    result &= static_cast<bool>(CopyFile(orig_pdb, pdbname.c_str(), 0));
+    result &= cr_copy(orig_pdb, pdbname);
     return result;
 }
 #endif // _MSC_VER
@@ -1040,7 +1051,8 @@ static void cr_so_unload(cr_plugin &ctx) {
 }
 
 static so_handle cr_so_load(const std::string &filename) {
-    auto new_dll = LoadLibrary(filename.c_str());
+    CR_WINDOWS_ConvertPath(_filename, filename);
+    auto new_dll = LoadLibrary(_filename.c_str());
     if (!new_dll) {
         CR_ERROR("Couldn't load plugin: %d\n", GetLastError());
     }
