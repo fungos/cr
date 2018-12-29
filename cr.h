@@ -1130,6 +1130,14 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
 #include <sys/ucontext.h>
 #include <unistd.h>
 
+#if defined(CR_LINUX)
+#   include <sys/sendfile.h>    // sendfile
+#elif defined(CR_OSX)
+#   include <sys/types.h>
+#   include <sys/socket.h>
+#   include <sys/uio.h>
+#endif
+
 using so_handle = void *;
 
 static size_t cr_file_size(const std::string &path) {
@@ -1163,26 +1171,28 @@ static bool cr_exists(const std::string &path) {
 }
 
 static bool cr_copy(const std::string &from, const std::string &to) {
-    char buffer[BUFSIZ];
-    size_t size;
-
-    FILE *source = fopen(from.c_str(), "rb");
-    if (source == nullptr) {
+    // Reference: http://www.informit.com/articles/article.aspx?p=23618&seqNum=13
+    int input, output;
+    struct stat src_stat;
+    if ((input = open(from.c_str(), O_RDONLY)) == -1) {
         return false;
     }
-    FILE *destination = fopen(to.c_str(), "wb");
-    if (destination == nullptr) {
-        fclose(source);
+    fstat(input, &src_stat);
+
+    if ((output = open(to.c_str(), O_WRONLY|O_CREAT, O_NOFOLLOW|src_stat.st_mode)) == -1) {
+        close(input);
         return false;
     }
 
-    while ((size = fread(buffer, 1, BUFSIZ, source)) != 0) {
-        fwrite(buffer, 1, size, destination);
-    }
-
-    fclose(source);
-    fclose(destination);
-    return true;
+#if	defined(CR_OSX)
+    off_t bytes_copied;
+    int result = sendfile(output, input, 0, &bytes_copied, 0, 0);
+#else
+    int result = sendfile(output, input, NULL, src_stat.st_size);
+#endif
+    close(input);
+    close(output);
+    return result > -1;
 }
 
 static void cr_del(const std::string& path) {
