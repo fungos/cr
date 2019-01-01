@@ -1133,9 +1133,7 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
 #if defined(CR_LINUX)
 #   include <sys/sendfile.h>    // sendfile
 #elif defined(CR_OSX)
-#   include <sys/types.h>
-#   include <sys/socket.h>
-#   include <sys/uio.h>
+#   include <copyfile.h>        // copyfile
 #endif
 
 using so_handle = void *;
@@ -1171,6 +1169,7 @@ static bool cr_exists(const std::string &path) {
 }
 
 static bool cr_copy(const std::string &from, const std::string &to) {
+#if defined(CR_LINUX)
     // Reference: http://www.informit.com/articles/article.aspx?p=23618&seqNum=13
     int input, output;
     struct stat src_stat;
@@ -1184,15 +1183,13 @@ static bool cr_copy(const std::string &from, const std::string &to) {
         return false;
     }
 
-#if	defined(CR_OSX)
-    off_t bytes_copied;
-    int result = sendfile(output, input, 0, &bytes_copied, 0, 0);
-#else
     int result = sendfile(output, input, NULL, src_stat.st_size);
-#endif
     close(input);
     close(output);
     return result > -1;
+#elif defined(CR_OSX)
+    return copyfile(from.c_str(), to.c_str(), NULL, COPYFILE_ALL|COPYFILE_NOFOLLOW_DST) == 0;
+#endif
 }
 
 static void cr_del(const std::string& path) {
