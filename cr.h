@@ -656,9 +656,9 @@ static void cr_set_temporary_path(cr_plugin &ctx, const std::string &path) {
 #include <windows.h>
 #include <dbghelp.h>
 // clang-format on
-
+#ifdef _MSC_VER
 #pragma comment(lib, "dbghelp.lib")
-
+#endif
 using so_handle = HMODULE;
 
 #ifdef UNICODE
@@ -1908,7 +1908,7 @@ extern "C" void cr_plugin_close(cr_plugin &ctx) {
     const auto file = p->fullname;
     for (unsigned int i = 0; i < ctx.version; i++) {
         cr_del(cr_version_path(file, i, p->temppath));
-#if defined(_WIN32)
+#if defined(_MSC_VER)
         cr_del(cr_replace_extension(cr_version_path(file, i, p->temppath), ".pdb"));
 #endif
     }
