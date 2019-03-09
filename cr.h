@@ -958,6 +958,7 @@ static bool cr_pdb_replace(const std::string &filename, const std::string &pdbna
                 if (len >= strlen(pdbname.c_str())) {
                     orig_pdb = pdb;
                     memcpy_s(pdb, len, pdbname.c_str(), pdbname.length());
+                    pdb[pdbname.length()] = 0;
                     result = true;
                 }
             }
