@@ -1617,7 +1617,15 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
     auto p = (cr_internal *)ctx.p;
     const auto file = p->fullname;
     if (cr_exists(file) || rollback) {
-        const auto new_file = cr_version_path(file, ctx.version, p->temppath);
+        auto new_file = cr_version_path(file, ctx.version, p->temppath);
+        if(!rollback) {
+            while(cr_exists(new_file)) {
+                ctx.version++;
+                CR_LOG("file already exists '%s' bump version: %d\n",
+                    new_file.c_str(), ctx.version);
+                new_file = cr_version_path(file, ctx.version, p->temppath);
+            }
+        }
 
         const bool close = false;
         CR_LOG("unload '%s' with rollback: %d\n", file.c_str(), rollback);
