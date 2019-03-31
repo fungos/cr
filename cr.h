@@ -1617,11 +1617,12 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
     auto p = (cr_internal *)ctx.p;
     const auto file = p->fullname;
     if (cr_exists(file) || rollback) {
-        const auto new_file = cr_version_path(file, ctx.version, p->temppath);
+        const auto old_file = cr_version_path(file, ctx.version, p->temppath);
+        CR_LOG("unload '%s' with rollback: %d\n", old_file.c_str(), rollback);
+        cr_plugin_unload(ctx, rollback, false);
 
-        const bool close = false;
-        CR_LOG("unload '%s' with rollback: %d\n", file.c_str(), rollback);
-        cr_plugin_unload(ctx, rollback, close);
+        auto new_version = ctx.version + 1;
+        const auto new_file = cr_version_path(file, new_version, p->temppath);
         if (!rollback) {
             cr_copy(file, new_file);
 
@@ -1666,7 +1667,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         if (ctx.failure != CR_BAD_IMAGE) {
             p2->timestamp = cr_last_write_time(file);
         }
-        ctx.version++;
+        ctx.version = new_version;
         CR_LOG("loaded: %s (version: %d)\n", new_file.c_str(), ctx.version);
     } else {
         CR_ERROR("Error loading plugin.\n");
