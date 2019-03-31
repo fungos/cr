@@ -1621,7 +1621,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         CR_LOG("unload '%s' with rollback: %d\n", old_file.c_str(), rollback);
         cr_plugin_unload(ctx, rollback, false);
 
-        auto new_version = ctx.version + 1;
+        auto new_version = ctx.version + (rollback ? 0 : 1);
         const auto new_file = cr_version_path(file, new_version, p->temppath);
         if (!rollback) {
             cr_copy(file, new_file);
@@ -1822,7 +1822,6 @@ static void cr_plugin_unload(cr_plugin &ctx, bool rollback, bool close) {
 // in turn may also cause more rollbacks.
 static bool cr_plugin_rollback(cr_plugin &ctx) {
     CR_TRACE
-    ctx.version = ctx.version > 0 ? ctx.version - 1 : 0;
     auto loaded = cr_plugin_load_internal(ctx, true);
     if (loaded) {
         loaded = cr_plugin_main(ctx, CR_LOAD) >= 0;
