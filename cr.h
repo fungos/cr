@@ -1625,8 +1625,13 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         }
 
         auto new_version = ctx.version + (rollback ? 0 : 1);
-        const auto new_file = cr_version_path(file, new_version, p->temppath);
+        auto new_file = cr_version_path(file, new_version, p->temppath);
         if (!rollback) {
+            while(cr_exists(new_file)) {
+                new_version++;
+                CR_LOG("File exists: %s (bump version: %d)\n", new_file.c_str(), new_version);
+                new_file = cr_version_path(file, new_version, p->temppath);
+            }
             cr_copy(file, new_file);
 
 #if defined(_MSC_VER)
