@@ -444,6 +444,7 @@ struct cr_plugin {
     void *userdata;
     unsigned int version;
     enum cr_failure failure;
+    unsigned int last_version;
 };
 
 #ifndef CR_HOST
@@ -1085,7 +1086,7 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    ctx.version = ctx.version > 1 ? ctx.version - 1 : 1;
+    ctx.version = ctx.last_version;
     switch (seh) {
     case EXCEPTION_ACCESS_VIOLATION:
         ctx.failure = CR_SEGFAULT;
@@ -1595,7 +1596,7 @@ static cr_failure cr_signal_to_failure(int sig) {
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     if (int sig = sigsetjmp(env, 1)) {
-        ctx.version = ctx.version > 0 ? ctx.version - 1 : 0;
+        ctx.version = ctx.last_version;
         ctx.failure = cr_signal_to_failure(sig);
         CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
         return -1;
@@ -1626,7 +1627,12 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
 
         auto new_version = ctx.version + (rollback ? 0 : 1);
         auto new_file = cr_version_path(file, new_version, p->temppath);
-        if (!rollback) {
+        if (rollback) {
+            // Don't rollback to this version again, if it crashes.
+            ctx.last_version = ctx.version > 0 ? ctx.version - 1 : 0;
+        } else {
+            // Save current version for rollback.
+            ctx.last_version = ctx.version;
             while(cr_exists(new_file)) {
                 new_version++;
                 CR_LOG("File exists: %s (bump version: %d)\n", new_file.c_str(), new_version);
@@ -1904,6 +1910,7 @@ extern "C" bool cr_plugin_load(cr_plugin &ctx, const char *fullpath) {
     p->mode = CR_OP_MODE;
     p->fullname = fullpath;
     ctx.p = p;
+    ctx.last_version = 0;
     ctx.version = 0;
     ctx.failure = CR_NONE;
     cr_plat_init();
