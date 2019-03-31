@@ -637,7 +637,7 @@ static void cr_plugin_sections_reload(cr_plugin &ctx,
 static void cr_plugin_sections_store(cr_plugin &ctx);
 static void cr_plugin_sections_backup(cr_plugin &ctx);
 static void cr_plugin_reload(cr_plugin &ctx);
-static void cr_plugin_unload(cr_plugin &ctx, bool rollback, bool close);
+static int cr_plugin_unload(cr_plugin &ctx, bool rollback, bool close);
 static bool cr_plugin_changed(cr_plugin &ctx);
 static bool cr_plugin_rollback(cr_plugin &ctx);
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation);
@@ -1619,7 +1619,10 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
     if (cr_exists(file) || rollback) {
         const auto old_file = cr_version_path(file, ctx.version, p->temppath);
         CR_LOG("unload '%s' with rollback: %d\n", old_file.c_str(), rollback);
-        cr_plugin_unload(ctx, rollback, false);
+        int r = cr_plugin_unload(ctx, rollback, false);
+        if (r < 0) {
+            return false;
+        }
 
         auto new_version = ctx.version + (rollback ? 0 : 1);
         const auto new_file = cr_version_path(file, new_version, p->temppath);
@@ -1802,18 +1805,25 @@ static bool cr_plugin_changed(cr_plugin &ctx) {
 // unload is due a rollback, no `cr_op::CR_UNLOAD` is called neither any state
 // is saved, giving opportunity to the previous version to continue with valid
 // previous state.
-static void cr_plugin_unload(cr_plugin &ctx, bool rollback, bool close) {
+static int cr_plugin_unload(cr_plugin &ctx, bool rollback, bool close) {
     CR_TRACE
     auto p = (cr_internal *)ctx.p;
+    int r = 0;
     if (p->handle) {
         if (!rollback) {
-            cr_plugin_main(ctx, close ? CR_CLOSE : CR_UNLOAD);
-            cr_plugin_sections_store(ctx);
+            r = cr_plugin_main(ctx, close ? CR_CLOSE : CR_UNLOAD);
+            // Don't store state if unload crashed.  Rollback will use backup.
+            if (r < 0) {
+                CR_LOG("4 FAILURE: %d\n", r);
+            } else {
+                cr_plugin_sections_store(ctx);
+            }
         }
         cr_so_unload(ctx);
         p->handle = nullptr;
         p->main = nullptr;
     }
+    return r;
 }
 
 // internal

@@ -148,15 +148,15 @@ TEST(crTest, basic_flow) {
     touch(bin);
 
     // force crash on unload
-    // but now the bug moved and crashed again, we're back to version 2
+    // but now the bug moved and crashed again, we're back to version 1
     data.test = test_id::crash_unload;
     EXPECT_EQ(-2, cr_plugin_update(ctx));
-    EXPECT_EQ((unsigned int)2, ctx.version);
+    EXPECT_EQ((unsigned int)1, ctx.version);
     EXPECT_EQ(CR_SEGFAULT, ctx.failure);
 
-    // unload crashed, should still restore version 2
+    // unload crashed, next update should do a rollback
     data.test = test_id::return_version;
-    EXPECT_EQ(2, cr_plugin_update(ctx));
+    EXPECT_EQ(1, cr_plugin_update(ctx));
 
     // modify states
     data.test = test_id::static_local_state_int;
