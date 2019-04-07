@@ -444,7 +444,8 @@ struct cr_plugin {
     void *userdata;
     unsigned int version;
     enum cr_failure failure;
-    unsigned int last_version;
+    unsigned int next_version;
+    unsigned int last_working_version;
 };
 
 #ifndef CR_HOST
@@ -1086,7 +1087,7 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    ctx.version = ctx.last_version;
+    ctx.version = ctx.last_working_version;
     switch (seh) {
     case EXCEPTION_ACCESS_VIOLATION:
         ctx.failure = CR_SEGFAULT;
@@ -1596,7 +1597,7 @@ static cr_failure cr_signal_to_failure(int sig) {
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     if (int sig = sigsetjmp(env, 1)) {
-        ctx.version = ctx.last_version;
+        ctx.version = ctx.last_working_version;
         ctx.failure = cr_signal_to_failure(sig);
         CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
         return -1;
@@ -1625,20 +1626,18 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
             return false;
         }
 
-        auto new_version = ctx.version + (rollback ? 0 : 1);
+        auto new_version = rollback ? ctx.version : ctx.next_version;
         auto new_file = cr_version_path(file, new_version, p->temppath);
         if (rollback) {
             // Don't rollback to this version again, if it crashes.
-            ctx.last_version = ctx.version > 0 ? ctx.version - 1 : 0;
+            ctx.last_working_version = ctx.version > 0 ? ctx.version - 1 : 0;
         } else {
             // Save current version for rollback.
-            ctx.last_version = ctx.version;
-            while(cr_exists(new_file)) {
-                new_version++;
-                CR_LOG("File exists: %s (bump version: %d)\n", new_file.c_str(), new_version);
-                new_file = cr_version_path(file, new_version, p->temppath);
-            }
+            ctx.last_working_version = ctx.version;
             cr_copy(file, new_file);
+
+            // Update `next_version` for use by the next reload.
+            ctx.next_version = new_version + 1;
 
 #if defined(_MSC_VER)
             if (!cr_pdb_process(file, new_file)) {
@@ -1910,7 +1909,8 @@ extern "C" bool cr_plugin_load(cr_plugin &ctx, const char *fullpath) {
     p->mode = CR_OP_MODE;
     p->fullname = fullpath;
     ctx.p = p;
-    ctx.last_version = 0;
+    ctx.next_version = 1;
+    ctx.last_working_version = 0;
     ctx.version = 0;
     ctx.failure = CR_NONE;
     cr_plat_init();
