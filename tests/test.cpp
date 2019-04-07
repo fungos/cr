@@ -22,7 +22,7 @@ void touch(const char *filename) {
 }
 #endif
 
-void delete_old_files(cr_plugin &ctx, int max_version) {
+void delete_old_files(cr_plugin &ctx, unsigned int max_version) {
     auto p = (cr_internal *)ctx.p;
     const auto file = p->fullname;
     for (unsigned int i = 0; i < max_version; i++) {
@@ -177,7 +177,7 @@ TEST(crTest, basic_flow) {
     EXPECT_EQ(saved_global_static + 3, cr_plugin_update(ctx));
 
     // Cleanup old version
-    delete_old_files(ctx, 10);
+    delete_old_files(ctx, ctx.next_version);
 
     cr_plugin_close(ctx);
     EXPECT_EQ(ctx.p, nullptr);
