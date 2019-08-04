@@ -1905,6 +1905,9 @@ extern "C" int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true) {
 extern "C" bool cr_plugin_load(cr_plugin &ctx, const char *fullpath) {
     CR_TRACE
     CR_ASSERT(fullpath);
+    if (!cr_exists(fullpath)) {
+        return false;
+    }
     auto p = new(CR_MALLOC(sizeof(cr_internal))) cr_internal;
     p->mode = CR_OP_MODE;
     p->fullname = fullpath;
