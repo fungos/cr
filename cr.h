@@ -1557,6 +1557,11 @@ static void cr_signal_handler(int sig, siginfo_t *si, void *uap) {
 
 static void cr_plat_init() {
     CR_TRACE
+    static bool initialized = false;
+    if (initialized) {
+        return;
+    }
+    initialized = true;
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
     sigemptyset(&sa.sa_mask);
