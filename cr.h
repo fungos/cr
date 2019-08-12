@@ -1654,13 +1654,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
 
         auto new_dll = cr_so_load(new_file);
         if (!new_dll) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            // we may want set a failure reason and avoid sleeping ourselves.
-            // this may happen mostly due to compiler still writing the binary
-            // to the disk, so for now we just sleep a bit, but ideally we
-            // may want to report this to the user to deal with it.
             ctx.failure = CR_BAD_IMAGE;
-            CR_LOG("waiting...\n");
             return false;
         }
 
