@@ -14,8 +14,8 @@ int main(int argc, char *argv[]) {
     cr_plugin ctx, ctx2;
     // the host application should initalize a plugin with a context, a plugin
     // filename without extension and the full path to the plugin
-    cr_plugin_load(ctx, plugin);
-    cr_plugin_load(ctx2, plugin2);
+    cr_plugin_open(ctx, plugin);
+    cr_plugin_open(ctx2, plugin2);
 
     // call the plugin update function with the plugin context to execute it
     // at any frequency matters to you
