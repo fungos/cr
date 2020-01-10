@@ -41,7 +41,7 @@ TEST(crTest, basic_flow) {
     test_data data;
     ctx.userdata = &data;
     // version 1
-    EXPECT_EQ(true, cr_plugin_load(ctx, bin));
+    EXPECT_EQ(true, cr_plugin_open(ctx, bin));
 
     data.test = test_id::return_version;
     EXPECT_EQ(1, cr_plugin_update(ctx));

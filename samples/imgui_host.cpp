@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
 
     cr_plugin ctx;
     ctx.userdata = &data;
-    cr_plugin_load(ctx, plugin);
+    cr_plugin_open(ctx, plugin);
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
