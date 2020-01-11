@@ -1158,14 +1158,6 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
 
 using so_handle = void *;
 
-static size_t cr_file_size(const std::string &path) {
-    struct stat stats;
-    if (stat(path.c_str(), &stats) == -1) {
-        return 0;
-    }
-    return static_cast<size_t>(stats.st_size);
-}
-
 static time_t cr_last_write_time(const std::string &path) {
     struct stat stats;
     if (stat(path.c_str(), &stats) == -1) {
@@ -1236,6 +1228,14 @@ bool cr_is_empty(const void *const buf, int64_t len) {
 #if defined(CR_LINUX)
 #include <elf.h>
 #include <link.h>
+
+static size_t cr_file_size(const std::string &path) {
+    struct stat stats;
+    if (stat(path.c_str(), &stats) == -1) {
+        return 0;
+    }
+    return static_cast<size_t>(stats.st_size);
+}
 
 // unix,internal
 // save section information to be used during load/unload when copying
@@ -1489,7 +1489,8 @@ static bool cr_plugin_validate_sections(cr_plugin &ctx, so_handle handle,
         }
 
         intptr_t vaddr = _dyld_get_image_vmaddr_slide(i);
-        auto cmd_stride = sizeof(struct mach_header);
+        (void)vaddr;
+        //auto cmd_stride = sizeof(struct mach_header);
         if (hdr->magic != CR_MH_MAGIC) {
             // check for conforming mach-o header
             continue;
