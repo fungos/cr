@@ -68,6 +68,11 @@ CR_EXPORT int cr_main(struct cr_plugin *ctx, enum cr_op operation) {
 
 ### Changelog
 
+#### 2020-04-19
+
+- Added a failure `CR_INITIAL_FAILURE`. If the initial plugin crashes, the host must determine the next path, and we will not reload
+the broken plugin.
+
 #### 2020-01-09
 
 - Deprecated `cr_plugin_load` in favor to `cr_plugin_open` for consistency with `cr_plugin_close`. See issue #49.
@@ -436,6 +441,7 @@ enum cr_failure {
                           // not safely match basically a failure of
                           // cr_plugin_validate_sections
     CR_BAD_IMAGE, // The binary is not valid - compiler is still writing it
+    CR_INITIAL_FAILURE, // Plugin version 1 crashed, cannot rollback
     CR_OTHER,    // Unknown or other signal,
     CR_USER = 0x100,
 };
@@ -1645,6 +1651,10 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         auto new_version = rollback ? ctx.version : ctx.next_version;
         auto new_file = cr_version_path(file, new_version, p->temppath);
         if (rollback) {
+            if (ctx.version == 0) {
+                ctx.failure = CR_INITIAL_FAILURE;
+                return false;
+            }
             // Don't rollback to this version again, if it crashes.
             ctx.last_working_version = ctx.version > 0 ? ctx.version - 1 : 0;
         } else {
