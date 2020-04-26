@@ -1379,28 +1379,23 @@ static bool cr_plugin_validate_sections(cr_plugin &ctx, so_handle handle,
         p = (char *)mmap(0, len, PROT_READ, MAP_PRIVATE, fd, 0);
         close(fd);
 
-        auto ehdr32 = (Elf32_Ehdr *)p;
-        if (ehdr32->e_ident[EI_MAG0] != ELFMAG0 ||
-            ehdr32->e_ident[EI_MAG1] != ELFMAG1 ||
-            ehdr32->e_ident[EI_MAG2] != ELFMAG2 ||
-            ehdr32->e_ident[EI_MAG3] != ELFMAG3) {
+        // The ElfW() macro definition turns its argument into the name of an
+        // ELF data type suitable for the hardware architecture. For example,
+        // ElfW(Ehdr) yeilds the data type name Elf32_Ehdr on a 32-bit platforms,
+        // and Elf64_Ehdr on 64-bit platforms.
+        ElfW(Ehdr) *ehdr = (ElfW(Ehdr) *) p;
+        if (ehdr->e_ident[EI_MAG0] != ELFMAG0 ||
+            ehdr->e_ident[EI_MAG1] != ELFMAG1 ||
+            ehdr->e_ident[EI_MAG2] != ELFMAG2 ||
+            ehdr->e_ident[EI_MAG3] != ELFMAG3) {
             break;
         }
 
-        if (ehdr32->e_ident[EI_CLASS] == ELFCLASS32) {
-            auto shdr = (Elf32_Shdr *)(p + ehdr32->e_shoff);
-            auto sh_strtab = &shdr[ehdr32->e_shstrndx];
-            const char *const sh_strtab_p = p + sh_strtab->sh_offset;
-            result = cr_elf_validate_sections(ctx, rollback, shdr,
-                                              ehdr32->e_shnum, sh_strtab_p);
-        } else {
-            auto ehdr64 = (Elf64_Ehdr *)p;
-            auto shdr = (Elf64_Shdr *)(p + ehdr64->e_shoff);
-            auto sh_strtab = &shdr[ehdr64->e_shstrndx];
-            const char *const sh_strtab_p = p + sh_strtab->sh_offset;
-            result = cr_elf_validate_sections(ctx, rollback, shdr,
-                                              ehdr64->e_shnum, sh_strtab_p);
-        }
+        ElfW(Shdr*) shdr = (ElfW(Shdr) *)(p + ehdr->e_shoff);
+        auto sh_strtab = &shdr[ehdr->e_shstrndx];
+        const char *const sh_strtab_p = p + sh_strtab->sh_offset;
+        result = cr_elf_validate_sections(ctx, rollback, shdr,
+                                          ehdr->e_shnum, sh_strtab_p);
     } while (0);
 
     if (p) {
