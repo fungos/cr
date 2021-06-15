@@ -457,7 +457,7 @@ void imui_draw() {
         ImGui::End();
     }
 
-    // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
+    // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowDemoWindow()
     if (show_test_window) {
         ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
         ImGui::ShowDemoWindow(&show_test_window);
