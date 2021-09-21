@@ -331,7 +331,6 @@ bool imui_init() {
     io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
     io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
 
-    io.RenderDrawListsFn = ImGui_ImplGlfwGL3_RenderDrawLists; // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
     io.SetClipboardTextFn = g_data->set_clipboard_fn;
     io.GetClipboardTextFn = g_data->get_clipboard_fn;
     io.ClipboardUserData = g_data->window;
@@ -361,6 +360,7 @@ void imui_frame_end() {
     glClearColor(g_clear_color.x, g_clear_color.y, g_clear_color.z, g_clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui::Render();
+    ImGui_ImplGlfwGL3_RenderDrawLists(ImGui::GetDrawData());
 }
 
 void imui_frame_begin() {
