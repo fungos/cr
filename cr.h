@@ -182,8 +182,7 @@ Arguments
 Enum indicating the kind of step that is being executed by the `host`:
 
 - `CR_LOAD` A load caused by reload is being executed, can be used to restore any
- saved internal state. This does not happen when a plugin is loaded for the first
- time as there is no state to restore;
+ saved internal state. 
 - `CR_STEP` An application update, this is the normal and most frequent operation;
 - `CR_UNLOAD` An unload for reloading the plugin will be executed, giving the
  application one chance to store any required data;
