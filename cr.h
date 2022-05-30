@@ -405,6 +405,15 @@ platform should be supported."
 #define CR_IMPORT
 #endif // defined(__GNUC__)
 
+#if defined(__MINGW32__)
+#undef CR_EXPORT
+#if defined(__cplusplus)
+#define CR_EXPORT  extern "C" __declspec(dllexport)
+#else
+#define CR_EXPORT  __declspec(dllexport)
+#endif
+#endif
+
 // cr_mode defines how much we validate global state transfer between
 // instances. The default is CR_UNSAFE, you can choose another mode by
 // defining CR_HOST, ie.: #define CR_HOST CR_SAFEST
