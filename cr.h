@@ -1104,7 +1104,6 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
 }
 
 #ifdef __MINGW32__
-
 #include <setjmp.h>
 #include <signal.h>
 
@@ -1126,8 +1125,6 @@ static cr_failure cr_signal_to_failure(int sig) {
     }
     return static_cast<cr_failure>(CR_OTHER + sig);
 }
-
-
 #endif
 
 static void cr_plat_init() {
