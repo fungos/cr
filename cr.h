@@ -1139,7 +1139,7 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
 
 extern "C" EXCEPTION_DISPOSITION ExceptionHandler (struct _EXCEPTION_RECORD* er, void* buf, struct _CONTEXT* ctx, void* buf2)
 { 
-  return ExceptionNestedException;
+  return EXCEPTION_EXECUTE_HANDLER;
 }
 #endif
 
