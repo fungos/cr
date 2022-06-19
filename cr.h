@@ -1103,7 +1103,40 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     return new_main;
 }
 
+#ifdef __MINGW32__
+
+#include <setjmp.h>
+#include <signal.h>
+
+jmp_buf env;
+static void cr_signal_handler(int sig) { 
+    longjmp(env, sig); 
+    }
+
+static cr_failure cr_signal_to_failure(int sig) {
+    switch (sig) {
+    case 0:
+        return CR_NONE;
+    case SIGILL:
+        return CR_ILLEGAL;
+    case SIGSEGV:
+        return CR_SEGFAULT;
+    case SIGABRT:
+        return CR_ABORT;
+    }
+    return static_cast<cr_failure>(CR_OTHER + sig);
+}
+
+
+#endif
+
 static void cr_plat_init() {
+#ifdef __MINGW32__
+  CR_TRACE
+  signal(SIGILL, cr_signal_handler);
+  signal(SIGSEGV, cr_signal_handler);
+  signal(SIGABRT, cr_signal_handler);
+#endif
 }
 
 static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
@@ -1134,42 +1167,28 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#ifdef __MINGW32__
-#include <excpt.h>
-
-extern "C" EXCEPTION_DISPOSITION ExceptionHandler (struct _EXCEPTION_RECORD* er, void* buf, struct _CONTEXT* ctx, void* buf2)
-{ 
-  return EXCEPTION_EXECUTE_HANDLER;
-}
-#endif
-
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
 #ifndef __MINGW32__
     __try {
-#else
-    __try1(ExceptionHandler)
-    {
-#endif
         if (p->main) {
             return p->main(&ctx, operation);
         }
-#ifndef __MINGW32__
     } __except (cr_seh_filter(ctx, GetExceptionCode())) {
         return -1;
     }
 #else
-    }
-    __except1
-    {
-        if (ctx.version == 1) {
-            return EXCEPTION_CONTINUE_SEARCH;
+    if (int sig = setjmp(env)) {
+        ctx.version = ctx.last_working_version;
+        ctx.failure = cr_signal_to_failure(sig);
+        CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
+        return -1;
+    } else {
+        auto p = (cr_internal *)ctx.p;
+        CR_ASSERT(p);
+        if (p->main) {
+            return p->main(&ctx, operation);
         }
-
-    ctx.version = ctx.last_working_version;
-    ctx.failure = CR_OTHER;
-
-    return -1;
     }
 #endif
 
@@ -1929,6 +1948,10 @@ extern "C" int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true) {
         CR_LOG("1 ROLLBACK version was %d\n", ctx.version);
         cr_plugin_rollback(ctx);
         CR_LOG("1 ROLLBACK version is now %d\n", ctx.version);
+#ifdef __MINGW32__
+        cr_plat_init();
+#endif
+
     } else {
         if (reloadCheck) {
             cr_plugin_reload(ctx);
