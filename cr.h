@@ -1108,22 +1108,20 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
 #include <signal.h>
 
 jmp_buf env;
-static void cr_signal_handler(int sig) { 
-    longjmp(env, sig); 
-    }
+static void cr_signal_handler(int sig) { longjmp(env, sig); }
 
 static cr_failure cr_signal_to_failure(int sig) {
-    switch (sig) {
-    case 0:
-        return CR_NONE;
-    case SIGILL:
-        return CR_ILLEGAL;
-    case SIGSEGV:
-        return CR_SEGFAULT;
-    case SIGABRT:
-        return CR_ABORT;
-    }
-    return static_cast<cr_failure>(CR_OTHER + sig);
+  switch (sig) {
+  case 0:
+    return CR_NONE;
+  case SIGILL:
+    return CR_ILLEGAL;
+  case SIGSEGV:
+    return CR_SEGFAULT;
+  case SIGABRT:
+    return CR_ABORT;
+  }
+  return static_cast<cr_failure>(CR_OTHER + sig);
 }
 #endif
 
@@ -1176,16 +1174,16 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     }
 #else
     if (int sig = setjmp(env)) {
-        ctx.version = ctx.last_working_version;
-        ctx.failure = cr_signal_to_failure(sig);
-        CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
-        return -1;
+      ctx.version = ctx.last_working_version;
+      ctx.failure = cr_signal_to_failure(sig);
+      CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
+      return -1;
     } else {
-        auto p = (cr_internal *)ctx.p;
-        CR_ASSERT(p);
-        if (p->main) {
-            return p->main(&ctx, operation);
-        }
+      auto p = (cr_internal *)ctx.p;
+      CR_ASSERT(p);
+      if (p->main) {
+        return p->main(&ctx, operation);
+      }
     }
 #endif
 
