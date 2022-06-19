@@ -1134,10 +1134,22 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+#ifdef __MINGW32__
+#include <excpt.h>
+
+extern "C" EXCEPTION_DISPOSITION ExceptionHandler (struct _EXCEPTION_RECORD* er, void* buf, struct _CONTEXT* ctx, void* buf2)
+{ 
+  return ExceptionNestedException;
+}
+#endif
+
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
 #ifndef __MINGW32__
     __try {
+#else
+    __try1(ExceptionHandler)
+    {
 #endif
         if (p->main) {
             return p->main(&ctx, operation);
@@ -1146,7 +1158,21 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     } __except (cr_seh_filter(ctx, GetExceptionCode())) {
         return -1;
     }
+#else
+    }
+    __except1
+    {
+        if (ctx.version == 1) {
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
+
+    ctx.version = ctx.last_working_version;
+    ctx.failure = CR_OTHER;
+
+    return -1;
+    }
 #endif
+
     return -1;
 }
 
