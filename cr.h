@@ -321,6 +321,8 @@ With all these information you'll be able to decide which is better to your use 
 
 [@pixelherodev](https://github.com/pixelherodev)
 
+[Alexander](https://github.com/clibequilibrium)
+
 ### Contributing
 
 We welcome *ALL* contributions, there is no minor things to contribute with, even one letter typo fixes are welcome.
@@ -1113,26 +1115,26 @@ static void cr_signal_handler(int sig) {
 }
 
 static cr_failure cr_signal_to_failure(int sig) {
-  switch (sig) {
-  case 0:
-    return CR_NONE;
-  case SIGILL:
-    return CR_ILLEGAL;
-  case SIGSEGV:
-    return CR_SEGFAULT;
-  case SIGABRT:
-    return CR_ABORT;
-  }
-  return static_cast<cr_failure>(CR_OTHER + sig);
+    switch (sig) {
+    case 0:
+        return CR_NONE;
+    case SIGILL:
+        return CR_ILLEGAL;
+    case SIGSEGV:
+        return CR_SEGFAULT;
+    case SIGABRT:
+        return CR_ABORT;
+    }
+    return static_cast<cr_failure>(CR_OTHER + sig);
 }
 #endif
 
 static void cr_plat_init() {
 #ifdef __MINGW32__
-  CR_TRACE
-  signal(SIGILL, cr_signal_handler);
-  signal(SIGSEGV, cr_signal_handler);
-  signal(SIGABRT, cr_signal_handler);
+    CR_TRACE
+    signal(SIGILL, cr_signal_handler);
+    signal(SIGSEGV, cr_signal_handler);
+    signal(SIGABRT, cr_signal_handler);
 #endif
 }
 
@@ -1176,16 +1178,15 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     }
 #else
     if (int sig = __builtin_setjmp(env)) {
-      ctx.version = ctx.last_working_version;
-      ctx.failure = cr_signal_to_failure(sig);
-      CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
-      return -1;
+        ctx.version = ctx.last_working_version;
+        ctx.failure = cr_signal_to_failure(sig);
+        CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
+        return -1;
     } else {
-      auto p = (cr_internal *)ctx.p;
-      CR_ASSERT(p);
-      if (p->main) {
-        return p->main(&ctx, operation);
-      }
+        CR_ASSERT(p);
+        if (p->main) {
+            return p->main(&ctx, operation);
+        }
     }
 #endif
 
