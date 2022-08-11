@@ -613,7 +613,7 @@ static std::string cr_version_path(const std::string &basepath,
     // Length of path is extra space for version number. Trim file name only if version number
     // length exceeds pdb folder path length. This is not relevant on other platforms.
     if (ver.size() > folder.size()) {
-        fname = fname.substr(0, fname.size() - (ver.size() - folder.size() -1));
+        fname = fname.substr(0, fname.size() - (ver.size() - folder.size() - 1));
     }
 #endif
     if (!temppath.empty()) {
