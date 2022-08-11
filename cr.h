@@ -1954,7 +1954,7 @@ extern "C" int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true) {
         CR_LOG("1 ROLLBACK version was %d\n", ctx.version);
         cr_plugin_rollback(ctx);
         CR_LOG("1 ROLLBACK version is now %d\n", ctx.version);
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(__clang__)
         cr_plat_init();
 #endif
 
