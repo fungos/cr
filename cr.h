@@ -613,7 +613,7 @@ static std::string cr_version_path(const std::string &basepath,
     // Length of path is extra space for version number. Trim file name only if version number
     // length exceeds pdb folder path length. This is not relevant on other platforms.
     if (ver.size() > folder.size()) {
-        fname = fname.substr(0, fname.size() - (ver.size() - folder.size()));
+        fname = fname.substr(0, fname.size() - (ver.size() - folder.size() -1));
     }
 #endif
     if (!temppath.empty()) {
@@ -1105,13 +1105,18 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     return new_main;
 }
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(__clang__)
 #include <setjmp.h>
 #include <signal.h>
 
 static jmp_buf env;
 static void cr_signal_handler(int sig) {
-    __builtin_longjmp(env, 1);
+
+#if defined(__MINGW32__)
+  __builtin_longjmp(env, 1);
+#else
+  longjmp(env, 1);
+#endif
 }
 
 static cr_failure cr_signal_to_failure(int sig) {
@@ -1130,8 +1135,7 @@ static cr_failure cr_signal_to_failure(int sig) {
 #endif
 
 static void cr_plat_init() {
-#ifdef __MINGW32__
-    CR_TRACE
+#if defined(__MINGW32__) || defined(__clang__)
     signal(SIGILL, cr_signal_handler);
     signal(SIGSEGV, cr_signal_handler);
     signal(SIGABRT, cr_signal_handler);
@@ -1168,7 +1172,7 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
-#ifndef __MINGW32__
+#if !(defined(__MINGW32__)) && !(defined(__clang__))
     __try {
         if (p->main) {
             return p->main(&ctx, operation);
@@ -1177,11 +1181,15 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
         return -1;
     }
 #else
+#if defined(__MINGW32__)
     if (int sig = __builtin_setjmp(env)) {
-        ctx.version = ctx.last_working_version;
-        ctx.failure = cr_signal_to_failure(sig);
-        CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
-        return -1;
+#else
+    if (int sig = setjmp(env)) {
+#endif
+      ctx.version = ctx.last_working_version;
+      ctx.failure = cr_signal_to_failure(sig);
+      CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
+      return -1;
     } else {
         CR_ASSERT(p);
         if (p->main) {
