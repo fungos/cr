@@ -1105,18 +1105,13 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     return new_main;
 }
 
-#if defined(__MINGW32__) || defined(__clang__)
+#ifdef __MINGW32__
 #include <setjmp.h>
 #include <signal.h>
 
 static jmp_buf env;
 static void cr_signal_handler(int sig) {
-
-#if defined(__MINGW32__)
-  __builtin_longjmp(env, 1);
-#else
-  longjmp(env, 1);
-#endif
+    __builtin_longjmp(env, 1);
 }
 
 static cr_failure cr_signal_to_failure(int sig) {
@@ -1135,7 +1130,7 @@ static cr_failure cr_signal_to_failure(int sig) {
 #endif
 
 static void cr_plat_init() {
-#if defined(__MINGW32__) || defined(__clang__)
+#ifdef __MINGW32__
     signal(SIGILL, cr_signal_handler);
     signal(SIGSEGV, cr_signal_handler);
     signal(SIGABRT, cr_signal_handler);
@@ -1172,7 +1167,7 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
-#if !(defined(__MINGW32__)) && !(defined(__clang__))
+#ifndef __MINGW32__
     __try {
         if (p->main) {
             return p->main(&ctx, operation);
@@ -1181,15 +1176,11 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
         return -1;
     }
 #else
-#if defined(__MINGW32__)
     if (int sig = __builtin_setjmp(env)) {
-#else
-    if (int sig = setjmp(env)) {
-#endif
-      ctx.version = ctx.last_working_version;
-      ctx.failure = cr_signal_to_failure(sig);
-      CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
-      return -1;
+        ctx.version = ctx.last_working_version;
+        ctx.failure = cr_signal_to_failure(sig);
+        CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
+        return -1;
     } else {
         CR_ASSERT(p);
         if (p->main) {
@@ -1954,7 +1945,7 @@ extern "C" int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true) {
         CR_LOG("1 ROLLBACK version was %d\n", ctx.version);
         cr_plugin_rollback(ctx);
         CR_LOG("1 ROLLBACK version is now %d\n", ctx.version);
-#if defined(__MINGW32__) || defined(__clang__)
+#ifdef __MINGW32__
         cr_plat_init();
 #endif
 
