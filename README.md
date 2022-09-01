@@ -22,6 +22,18 @@ Note that the only file that matters is `cr.h`.
 This file contains the documentation in markdown, the license, the implementation and the public api.
 All other files in this repository are supporting files and can be safely ignored.
 
+### Building cr - Using vcpkg
+
+You can download and install cr using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install cr
+
+The cr port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
 ### Example
 
 A (thin) host application executable will make use of `cr` to manage
