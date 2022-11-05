@@ -342,7 +342,8 @@ bool imui_init() {
 void imui_shutdown() {
     ImGui_ImplGlfwGL3_InvalidateDeviceObjects();
 #if !defined(IMGUI_GUEST_ONLY)
-    ImGui::Shutdown(g_data->imgui_context);
+    ImGui::Shutdown();
+    ImGui::DestroyContext(g_data->imgui_context);
 #else
     ImGui::Shutdown(g_imgui_context);
 
