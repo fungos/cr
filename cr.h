@@ -1992,6 +1992,7 @@ extern "C" bool cr_plugin_open(cr_plugin &ctx, const char *fullpath) {
     auto p = new(CR_MALLOC(sizeof(cr_internal))) cr_internal;
     p->mode = CR_OP_MODE;
     p->fullname = fullpath;
+	p->timestamp = cr_last_write_time(fullpath);
     ctx.p = p;
     ctx.next_version = 1;
     ctx.last_working_version = 0;
