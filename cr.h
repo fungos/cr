@@ -11,14 +11,7 @@ A single file header-only live reload solution for C, written in C++:
 - support multiple plugins;
 - MIT licensed;
 
-### Build Status:
-
-|Platform|Build Status|
-|--------|------|
-|Linux|[![Build Status](https://travis-ci.org/fungos/cr.svg?branch=master)](https://travis-ci.org/fungos/cr)|
-|Windows|[![Build status](https://ci.appveyor.com/api/projects/status/jf0dq97w9b7b5ihi?svg=true)](https://ci.appveyor.com/project/fungos/cr)|
-
-Note that the only file that matters is `cr.h`.
+NOTE: The only file that matters in this repository is `cr.h`.
 
 This file contains the documentation in markdown, the license, the implementation and the public api.
 All other files in this repository are supporting files and can be safely ignored.

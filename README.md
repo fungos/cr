@@ -1,3 +1,4 @@
+/*
 # cr.h
 
 A single file header-only live reload solution for C, written in C++:
@@ -10,14 +11,7 @@ A single file header-only live reload solution for C, written in C++:
 - support multiple plugins;
 - MIT licensed;
 
-### Build Status:
-
-|Platform|Build Status|
-|--------|------|
-|Linux|[![Build Status](https://travis-ci.org/fungos/cr.svg?branch=master)](https://travis-ci.org/fungos/cr)|
-|Windows|[![Build status](https://ci.appveyor.com/api/projects/status/jf0dq97w9b7b5ihi?svg=true)](https://ci.appveyor.com/project/fungos/cr)|
-
-Note that the only file that matters is `cr.h`.
+NOTE: The only file that matters in this repository is `cr.h`.
 
 This file contains the documentation in markdown, the license, the implementation and the public api.
 All other files in this repository are supporting files and can be safely ignored.
@@ -78,6 +72,11 @@ CR_EXPORT int cr_main(struct cr_plugin *ctx, enum cr_op operation) {
 ```
 
 ### Changelog
+
+#### 2020-04-19
+
+- Added a failure `CR_INITIAL_FAILURE`. If the initial plugin crashes, the host must determine the next path, and we will not reload
+the broken plugin.
 
 #### 2020-01-09
 
@@ -188,12 +187,11 @@ Arguments
 Enum indicating the kind of step that is being executed by the `host`:
 
 - `CR_LOAD` A load caused by reload is being executed, can be used to restore any
- saved internal state. This does not happen when a plugin is loaded for the first
- time as there is no state to restore;
+ saved internal state. 
 - `CR_STEP` An application update, this is the normal and most frequent operation;
-- `CR_UNLOAD` An unload for reloading the plugin will be executed, giving the 
+- `CR_UNLOAD` An unload for reloading the plugin will be executed, giving the
  application one chance to store any required data;
-- `CR_CLOSE` Used when closing the plugin, This works like `CR_UNLOAD` but no `CR_LOAD` 
+- `CR_CLOSE` Used when closing the plugin, This works like `CR_UNLOAD` but no `CR_LOAD`
  should be expected afterwards;
 
 #### `cr_plugin`
@@ -328,6 +326,8 @@ With all these information you'll be able to decide which is better to your use 
 
 [@pixelherodev](https://github.com/pixelherodev)
 
+[Alexander](https://github.com/clibequilibrium)
+
 ### Contributing
 
 We welcome *ALL* contributions, there is no minor things to contribute with, even one letter typo fixes are welcome.
@@ -412,6 +412,15 @@ platform should be supported."
 #define CR_IMPORT
 #endif // defined(__GNUC__)
 
+#if defined(__MINGW32__)
+#undef CR_EXPORT
+#if defined(__cplusplus)
+#define CR_EXPORT  extern "C" __declspec(dllexport)
+#else
+#define CR_EXPORT  __declspec(dllexport)
+#endif
+#endif
+
 // cr_mode defines how much we validate global state transfer between
 // instances. The default is CR_UNSAFE, you can choose another mode by
 // defining CR_HOST, ie.: #define CR_HOST CR_SAFEST
@@ -447,6 +456,7 @@ enum cr_failure {
                           // not safely match basically a failure of
                           // cr_plugin_validate_sections
     CR_BAD_IMAGE, // The binary is not valid - compiler is still writing it
+    CR_INITIAL_FAILURE, // Plugin version 1 crashed, cannot rollback
     CR_OTHER,    // Unknown or other signal,
     CR_USER = 0x100,
 };
@@ -608,7 +618,7 @@ static std::string cr_version_path(const std::string &basepath,
     // Length of path is extra space for version number. Trim file name only if version number
     // length exceeds pdb folder path length. This is not relevant on other platforms.
     if (ver.size() > folder.size()) {
-        fname = fname.substr(0, fname.size() - (ver.size() - folder.size()));
+        fname = fname.substr(0, fname.size() - (ver.size() - folder.size() - 1));
     }
 #endif
     if (!temppath.empty()) {
@@ -1004,8 +1014,7 @@ static bool cr_pdb_replace(const std::string &filename, const std::string &pdbna
     return result;
 }
 
-bool static cr_pdb_process(const std::string &source,
-                           const std::string &desination) {
+bool static cr_pdb_process(const std::string &desination) {
     std::string folder, fname, ext, orig_pdb;
     cr_split_path(desination, folder, fname, ext);
     bool result = cr_pdb_replace(desination, fname + ".pdb", orig_pdb);
@@ -1101,7 +1110,36 @@ static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     return new_main;
 }
 
+#ifdef __MINGW32__
+#include <setjmp.h>
+#include <signal.h>
+
+static jmp_buf env;
+static void cr_signal_handler(int sig) {
+    __builtin_longjmp(env, 1);
+}
+
+static cr_failure cr_signal_to_failure(int sig) {
+    switch (sig) {
+    case 0:
+        return CR_NONE;
+    case SIGILL:
+        return CR_ILLEGAL;
+    case SIGSEGV:
+        return CR_SEGFAULT;
+    case SIGABRT:
+        return CR_ABORT;
+    }
+    return static_cast<cr_failure>(CR_OTHER + sig);
+}
+#endif
+
 static void cr_plat_init() {
+#ifdef __MINGW32__
+    signal(SIGILL, cr_signal_handler);
+    signal(SIGSEGV, cr_signal_handler);
+    signal(SIGABRT, cr_signal_handler);
+#endif
 }
 
 static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
@@ -1136,15 +1174,26 @@ static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
 #ifndef __MINGW32__
     __try {
-#endif
         if (p->main) {
             return p->main(&ctx, operation);
         }
-#ifndef __MINGW32__
     } __except (cr_seh_filter(ctx, GetExceptionCode())) {
         return -1;
     }
+#else
+    if (int sig = __builtin_setjmp(env)) {
+        ctx.version = ctx.last_working_version;
+        ctx.failure = cr_signal_to_failure(sig);
+        CR_LOG("1 FAILURE: %d (CR: %d)\n", sig, ctx.failure);
+        return -1;
+    } else {
+        CR_ASSERT(p);
+        if (p->main) {
+            return p->main(&ctx, operation);
+        }
+    }
 #endif
+
     return -1;
 }
 
@@ -1341,7 +1390,7 @@ struct cr_ld_data {
 // Some useful references:
 // http://www.skyfree.org/linux/references/ELF_Format.pdf
 // https://eli.thegreenplace.net/2011/08/25/load-time-relocation-of-shared-libraries/
-static int cr_dl_header_handler(struct dl_phdr_info *info, size_t size,
+static int cr_dl_header_handler(struct dl_phdr_info *info, size_t,
                                 void *data) {
     CR_ASSERT(info && data);
     auto p = (cr_ld_data *)data;
@@ -1391,28 +1440,23 @@ static bool cr_plugin_validate_sections(cr_plugin &ctx, so_handle handle,
         p = (char *)mmap(0, len, PROT_READ, MAP_PRIVATE, fd, 0);
         close(fd);
 
-        auto ehdr32 = (Elf32_Ehdr *)p;
-        if (ehdr32->e_ident[EI_MAG0] != ELFMAG0 ||
-            ehdr32->e_ident[EI_MAG1] != ELFMAG1 ||
-            ehdr32->e_ident[EI_MAG2] != ELFMAG2 ||
-            ehdr32->e_ident[EI_MAG3] != ELFMAG3) {
+        // The ElfW() macro definition turns its argument into the name of an
+        // ELF data type suitable for the hardware architecture. For example,
+        // ElfW(Ehdr) yeilds the data type name Elf32_Ehdr on a 32-bit platforms,
+        // and Elf64_Ehdr on 64-bit platforms.
+        ElfW(Ehdr) *ehdr = (ElfW(Ehdr) *) p;
+        if (ehdr->e_ident[EI_MAG0] != ELFMAG0 ||
+            ehdr->e_ident[EI_MAG1] != ELFMAG1 ||
+            ehdr->e_ident[EI_MAG2] != ELFMAG2 ||
+            ehdr->e_ident[EI_MAG3] != ELFMAG3) {
             break;
         }
 
-        if (ehdr32->e_ident[EI_CLASS] == ELFCLASS32) {
-            auto shdr = (Elf32_Shdr *)(p + ehdr32->e_shoff);
-            auto sh_strtab = &shdr[ehdr32->e_shstrndx];
-            const char *const sh_strtab_p = p + sh_strtab->sh_offset;
-            result = cr_elf_validate_sections(ctx, rollback, shdr,
-                                              ehdr32->e_shnum, sh_strtab_p);
-        } else {
-            auto ehdr64 = (Elf64_Ehdr *)p;
-            auto shdr = (Elf64_Shdr *)(p + ehdr64->e_shoff);
-            auto sh_strtab = &shdr[ehdr64->e_shstrndx];
-            const char *const sh_strtab_p = p + sh_strtab->sh_offset;
-            result = cr_elf_validate_sections(ctx, rollback, shdr,
-                                              ehdr64->e_shnum, sh_strtab_p);
-        }
+        ElfW(Shdr*) shdr = (ElfW(Shdr) *)(p + ehdr->e_shoff);
+        auto sh_strtab = &shdr[ehdr->e_shstrndx];
+        const char *const sh_strtab_p = p + sh_strtab->sh_offset;
+        result = cr_elf_validate_sections(ctx, rollback, shdr,
+                                          ehdr->e_shnum, sh_strtab_p);
     } while (0);
 
     if (p) {
@@ -1657,6 +1701,10 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
         auto new_version = rollback ? ctx.version : ctx.next_version;
         auto new_file = cr_version_path(file, new_version, p->temppath);
         if (rollback) {
+            if (ctx.version == 0) {
+                ctx.failure = CR_INITIAL_FAILURE;
+                return false;
+            }
             // Don't rollback to this version again, if it crashes.
             ctx.last_working_version = ctx.version > 0 ? ctx.version - 1 : 0;
         } else {
@@ -1668,7 +1716,7 @@ static bool cr_plugin_load_internal(cr_plugin &ctx, bool rollback) {
             ctx.next_version = new_version + 1;
 
 #if defined(_MSC_VER)
-            if (!cr_pdb_process(file, new_file)) {
+            if (!cr_pdb_process(new_file)) {
                 CR_ERROR("Couldn't process PDB, debugging may be "
                          "affected and/or reload may fail\n");
             }
@@ -1902,6 +1950,10 @@ extern "C" int cr_plugin_update(cr_plugin &ctx, bool reloadCheck = true) {
         CR_LOG("1 ROLLBACK version was %d\n", ctx.version);
         cr_plugin_rollback(ctx);
         CR_LOG("1 ROLLBACK version is now %d\n", ctx.version);
+#ifdef __MINGW32__
+        cr_plat_init();
+#endif
+
     } else {
         if (reloadCheck) {
             cr_plugin_reload(ctx);
@@ -1979,3 +2031,4 @@ extern "C" void cr_plugin_close(cr_plugin &ctx) {
 ```
 
 </details>
+*/
