@@ -28,6 +28,11 @@ You can download and install cr using the [vcpkg](https://github.com/Microsoft/v
 
 The cr port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
+### Building cr - Using CMake FetchContent
+
+FetchContent_Declare(cr GIT_REPOSITORY https://github.com/fungos/cr GIT_TAG master)
+FetchContent_MakeAvailable(cr)
+
 ### Example
 
 A (thin) host application executable will make use of `cr` to manage
@@ -35,7 +40,7 @@ live-reloading of the real application in the form of dynamic loadable binary, a
 
 ```c
 #define CR_HOST // required in the host only and before including cr.h
-#include "../cr.h"
+#include "cr.h"
 
 int main(int argc, char *argv[]) {
     // the host application should initalize a plugin with a context, a plugin
@@ -1102,7 +1107,7 @@ static so_handle cr_so_load(const std::string &filename) {
 
 static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     CR_ASSERT(handle);
-    auto new_main = (cr_plugin_main_func)GetProcAddress(handle, CR_MAIN_FUNC);
+    auto new_main = (cr_plugin_main_func)(void*)GetProcAddress(handle, CR_MAIN_FUNC);
     if (!new_main) {
         CR_ERROR("Couldn't find plugin entry point: %d\n",
                 GetLastError());

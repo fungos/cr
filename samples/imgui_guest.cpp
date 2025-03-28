@@ -9,7 +9,7 @@
 #include <GL/gl3w.h> // gl*
 #include <GLFW/glfw3.h> // GLFW_KEY*
 
-#include "../cr.h"
+#include "cr.h"
 
 // To test imgui 100% guest side, enable this
 //#define IMGUI_GUEST_ONLY
@@ -180,7 +180,7 @@ bool ImGui_ImplGlfwGL3_CreateFontsTexture() {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Store our identifier
-    io.Fonts->TexID = (void *)(intptr_t)g_FontTexture;
+    io.Fonts->TexID = (ImTextureID)(intptr_t)g_FontTexture;
 
     // Restore state
     glBindTexture(GL_TEXTURE_2D, last_texture);
@@ -334,7 +334,7 @@ bool imui_init() {
     io.SetClipboardTextFn = g_data->set_clipboard_fn;
     io.GetClipboardTextFn = g_data->get_clipboard_fn;
     io.ClipboardUserData = g_data->window;
-    io.ImeWindowHandle = g_data->wndh;
+    ImGui::GetMainViewport()->PlatformHandleRaw = g_data->wndh;
 
     return true;
 }

@@ -3,7 +3,7 @@
 #include <thread>
 
 #define CR_HOST CR_UNSAFE // try to best manage static states
-#include "../cr.h"
+#include "cr.h"
 
 const char *plugin = CR_DEPLOY_PATH "/" CR_PLUGIN("basic_guest");
 
