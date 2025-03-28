@@ -35,7 +35,7 @@ live-reloading of the real application in the form of dynamic loadable binary, a
 
 ```c
 #define CR_HOST // required in the host only and before including cr.h
-#include "../cr.h"
+#include "cr.h"
 
 int main(int argc, char *argv[]) {
     // the host application should initalize a plugin with a context, a plugin

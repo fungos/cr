@@ -11,7 +11,7 @@
 #endif
 
 #define CR_HOST CR_UNSAFE
-#include "../cr.h"
+#include "cr.h"
 
 const char *plugin = CR_DEPLOY_PATH "/" CR_PLUGIN("imgui_guest");
 

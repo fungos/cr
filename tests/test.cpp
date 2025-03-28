@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #define CR_HOST
-#include "../cr.h"
+#include "cr.h"
 #include "test_data.h"
 
 #if defined(CR_WINDOWS) || defined(CR_LINUX)

@@ -9,7 +9,7 @@
 #include <GL/gl3w.h> // gl*
 #include <GLFW/glfw3.h> // GLFW_KEY*
 
-#include "../cr.h"
+#include "cr.h"
 
 // To test imgui 100% guest side, enable this
 //#define IMGUI_GUEST_ONLY

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <assert.h>
-#include "../cr.h"
+#include "cr.h"
 
 // To save states automatically from previous instance to a new loaded one, use CR_STATE flag on statics/globals.
 // This will create a new data section in the binary for transferable states between instances that will be copied
