@@ -1,90 +1,100 @@
 {
- "isShellCommand":true,
- "version":"0.1.0",
- "showOutput":"silent",
+    "version": "2.0.0",
  "tasks":[
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"glfw3",
-   "args":[
-    "make",
-    "glfw3"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"googletest",
-   "args":[
-    "make",
-    "googletest"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"basic_guest",
-   "args":[
-    "make",
-    "basic_guest"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"imgui_host",
-   "args":[
-    "make",
-    "imgui_host"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"test_basic",
-   "args":[
-    "make",
-    "test_basic"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"crTest",
-   "args":[
-    "make",
-    "crTest"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"basic_host",
-   "args":[
-    "make",
-    "basic_host"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"imgui_guest",
-   "args":[
-    "make",
-    "imgui_guest"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "taskName":"imgui",
-   "args":[
-    "make",
-    "imgui"
-   ]
-  },
-  {
-   "problemMatcher":"$msCompile",
-   "isBuildCommand":true,
-   "taskName":"ALL",
-   "args":[
-    "build"
-   ]
-  }
- ],
- "suppressTaskName":true,
+    {
+        "label": "glfw3",
+        "type": "shell",
+        "args": [
+            "make",
+            "glfw3"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "googletest",
+        "type": "shell",
+        "args": [
+            "make",
+            "googletest"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "basic_guest",
+        "type": "shell",
+        "args": [
+            "make",
+            "basic_guest"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "imgui_host",
+        "type": "shell",
+        "args": [
+            "make",
+            "imgui_host"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "test_basic",
+        "type": "shell",
+        "args": [
+            "make",
+            "test_basic"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "crTest",
+        "type": "shell",
+        "args": [
+            "make",
+            "crTest"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "basic_host",
+        "type": "shell",
+        "args": [
+            "make",
+            "basic_host"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "imgui_guest",
+        "type": "shell",
+        "args": [
+            "make",
+            "imgui_guest"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "imgui",
+        "type": "shell",
+        "args": [
+            "make",
+            "imgui"
+        ],
+        "problemMatcher": "$msCompile"
+    },
+    {
+        "label": "ALL",
+        "type": "shell",
+        "args": [
+            "build"
+        ],
+        "problemMatcher": "$msCompile",
+        "group": {
+            "_id": "build",
+            "isDefault": false
+        }
+    }
+],
  "echoCommand":true,
  "command":"fips"
 }
