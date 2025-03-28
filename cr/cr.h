@@ -1107,7 +1107,7 @@ static so_handle cr_so_load(const std::string &filename) {
 
 static cr_plugin_main_func cr_so_symbol(so_handle handle) {
     CR_ASSERT(handle);
-    auto new_main = (cr_plugin_main_func)GetProcAddress(handle, CR_MAIN_FUNC);
+    auto new_main = (cr_plugin_main_func)(void*)GetProcAddress(handle, CR_MAIN_FUNC);
     if (!new_main) {
         CR_ERROR("Couldn't find plugin entry point: %d\n",
                 GetLastError());
