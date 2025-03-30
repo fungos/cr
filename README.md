@@ -104,14 +104,33 @@ The second one demonstrates how to live-reload an opengl application using
 
  ![imgui sample](https://i.imgur.com/Nq6s0GP.gif)
 
-#### Running Samples and Tests
+#### Samples and Tests
 
-Just use cmake.
+To build, use the given CMake preset:
 
 ```
-$ cmake . -B build
+$ cmake --preset Default .
 $ cmake --build build
-$ ctest build # runs crTest
+```
+
+To run the tests, you can use the vscode Launch Tests option (Windows only, currently), or:
+
+```
+$ cd build/tests
+$ ctest build
+```
+
+To use the basic sample, you can use the vscode Launch basic sample option (Windows only, currently), or:
+
+```
+$ cd build/samples/basic
+$ ./basic_host # or basic_host_b
+
+# Edit basic_guest.c, or just:
+$ touch basic_guest.c
+
+# rebuild
+$ cmake --build ../../
 ```
 
 For the imgui sample, after building:

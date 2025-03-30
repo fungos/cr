@@ -5,12 +5,40 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C++ Launch Tests (Visual Studio)",
+            "name": "Launch Tests (Visual Studio Debugger)",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/tests/crTest.exe",
             "cwd": "${workspaceFolder}/build/tests",
             "symbolSearchPath": "${workspaceFolder}/build/tests",
+            "console": "integratedTerminal",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "preLaunchTask": "Build with CMake"
+        },
+        {
+            "name": "Launch basic sample (VS Debugger)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/samples/basic/basic_host.exe",
+            "cwd": "${workspaceFolder}/build/samples/basic",
+            "symbolSearchPath": "${workspaceFolder}/build/smples/basic",
+            "console": "integratedTerminal",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "preLaunchTask": "Build with CMake"
+        },
+        {
+            "name": "Launch basic sample b (VS Debugger)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/samples/basic/basic_host_b.exe",
+            "cwd": "${workspaceFolder}/build/samples/basic",
+            "symbolSearchPath": "${workspaceFolder}/build/smples/basic",
             "console": "integratedTerminal",
             "logging": {
                 "moduleLoad": false,

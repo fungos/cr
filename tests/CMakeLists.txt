@@ -1,7 +1,3 @@
-add_library(test_basic SHARED test_basic.cpp test_basic.x)
-target_include_directories(test_basic PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(test_basic cr)
-
 # Based on: https://github.com/cpm-cmake/CPM.cmake/blob/master/examples/gtest/CMakeLists.txt#L11
 cpmaddpackage(
   NAME googletest
@@ -15,6 +11,10 @@ cpmaddpackage(
   "BUILD_GTEST ON"
   SYSTEM
 )
+
+add_library(test_basic MODULE test_basic.cpp test_basic.x)
+target_include_directories(test_basic PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_basic cr)
 
 add_executable(crTest test.cpp test_basic.x)
 target_include_directories(crTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

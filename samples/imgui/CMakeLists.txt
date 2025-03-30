@@ -18,14 +18,12 @@ cpmaddpackage(
 
 include(cmake/imgui_deps.cmake)
 
-add_library(imgui_guest SHARED imgui_guest.cpp)
-target_sources(imgui_guest PRIVATE GL/gfl3w.c)
+add_library(imgui_guest MODULE imgui_guest.cpp GL/gfl3w.c)
 target_include_directories(imgui_guest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_imgui_deps(imgui_guest)
 
 
-add_executable(imgui_host imgui_host.cpp)
-target_sources(imgui_host PRIVATE GL/gl3w.c)
+add_executable(imgui_host imgui_host.cpp GL/gl3w.c)
 target_include_directories(imgui_host PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(imgui_host PRIVATE glfw3 imgui)
 set_imgui_deps(imgui_host)
