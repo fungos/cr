@@ -180,7 +180,7 @@ bool ImGui_ImplGlfwGL3_CreateFontsTexture() {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Store our identifier
-    io.Fonts->TexID = (ImTextureID)(intptr_t)g_FontTexture;
+    io.Fonts->TexID = (void *)(intptr_t)g_FontTexture;
 
     // Restore state
     glBindTexture(GL_TEXTURE_2D, last_texture);
@@ -334,7 +334,7 @@ bool imui_init() {
     io.SetClipboardTextFn = g_data->set_clipboard_fn;
     io.GetClipboardTextFn = g_data->get_clipboard_fn;
     io.ClipboardUserData = g_data->window;
-    ImGui::GetMainViewport()->PlatformHandleRaw = g_data->wndh;
+    io.ImeWindowHandle = g_data->wndh;
 
     return true;
 }
@@ -342,7 +342,7 @@ bool imui_init() {
 void imui_shutdown() {
     ImGui_ImplGlfwGL3_InvalidateDeviceObjects();
 #if !defined(IMGUI_GUEST_ONLY)
-    ImGui::Shutdown();
+    ImGui::Shutdown(g_data->imgui_context);
     ImGui::DestroyContext(g_data->imgui_context);
 #else
     ImGui::Shutdown(g_imgui_context);

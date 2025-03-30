@@ -14,16 +14,40 @@ cpmaddpackage(
   NAME imgui
   GITHUB_REPOSITORY ocornut/imgui
   VERSION 1.82
+  DOWNLOAD_ONLY
 )
+if (imgui_ADDED)
+  # Based on https://github.com/fips-libs/fips-imgui/blob/1a38213f510f17a9bfd2026684b305670a216785/CMakeLists.txt
+  add_library(imgui STATIC)
+  target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR})
+  target_sources(imgui PRIVATE
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/imgui.cpp
+  )
+  if (MSVC)
+    target_compile_options(imgui PRIVATE /W0)
+  else()
+    target_compile_options(imgui PRIVATE -w)
+  endif()
+endif()
 
 include(cmake/imgui_deps.cmake)
 
-add_library(imgui_guest MODULE imgui_guest.cpp GL/gfl3w.c)
+add_subdirectory(GL)
+
+add_library(imgui_guest MODULE imgui_guest.cpp)
 target_include_directories(imgui_guest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-set_imgui_deps(imgui_guest)
+set_imgui_sample_deps(imgui_guest)
 
-
-add_executable(imgui_host imgui_host.cpp GL/gl3w.c)
+add_executable(imgui_host imgui_host.cpp)
 target_include_directories(imgui_host PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(imgui_host PRIVATE glfw3 imgui)
-set_imgui_deps(imgui_host)
+set_imgui_sample_deps(imgui_host)
+target_compile_definitions(imgui_host PRIVATE CR_DEPLOY_PATH="${CMAKE_CURRENT_BINARY_DIR}")
+
+add_custom_command(TARGET imgui_host POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:imgui_host> $<TARGET_FILE_DIR:imgui_host>
+  COMMAND_EXPAND_LISTS
+)

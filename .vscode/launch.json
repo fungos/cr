@@ -24,7 +24,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/samples/basic/basic_host.exe",
             "cwd": "${workspaceFolder}/build/samples/basic",
-            "symbolSearchPath": "${workspaceFolder}/build/smples/basic",
+            "symbolSearchPath": "${workspaceFolder}/build/samples/basic",
             "console": "integratedTerminal",
             "logging": {
                 "moduleLoad": false,
@@ -38,7 +38,21 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/samples/basic/basic_host_b.exe",
             "cwd": "${workspaceFolder}/build/samples/basic",
-            "symbolSearchPath": "${workspaceFolder}/build/smples/basic",
+            "symbolSearchPath": "${workspaceFolder}/build/samples/basic",
+            "console": "integratedTerminal",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "preLaunchTask": "Build with CMake"
+        },
+        {
+            "name": "Launch imgui sample (VS Debugger)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/samples/imgui/imgui_host.exe",
+            "cwd": "${workspaceFolder}/build/samples/imgui",
+            "symbolSearchPath": "${workspaceFolder}/build/samples/imgui",
             "console": "integratedTerminal",
             "logging": {
                 "moduleLoad": false,

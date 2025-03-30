@@ -1,5 +1,5 @@
-function(set_imgui_deps target)
-    target_link_libraries(${target} PRIVATE glfw3 imgui cr)
+function(set_imgui_sample_deps target)
+    target_link_libraries(${target} PRIVATE gl3w glfw imgui cr)
 if(WIN32)
     target_link_libraries(${target} PRIVATE opengl32)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
