@@ -4,28 +4,14 @@
 #include "cr.h"
 #include "test_data.h"
 
-#if defined(CR_WINDOWS) || defined(CR_LINUX)
-#if defined(_MSC_VER)
-// avoid experimental/filesystem deprecation #error on MSVC >= 16.3 since we're
-// not using C++17 explicitly.
-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
-#endif
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 
 void touch(const char *filename) {
     fs::path p = filename;
     auto ftime = fs::last_write_time(p);
     fs::last_write_time(p, ftime + std::chrono::seconds(1));
 }
-#else
-void touch(const char *filename) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    char cmd[1024] = {};
-    snprintf(cmd, sizeof(cmd), "touch %s", filename);
-    system(cmd);
-}
-#endif
 
 void delete_old_files(cr_plugin &ctx, unsigned int max_version) {
     auto p = (cr_internal *)ctx.p;
@@ -39,7 +25,9 @@ void delete_old_files(cr_plugin &ctx, unsigned int max_version) {
 }
 
 TEST(crTest, basic_flow) {
-    const char *bin = CR_DEPLOY_PATH "/" CR_PLUGIN("test_basic");
+    auto lib_path = fs::current_path() / CR_PLUGIN("test_basic");
+    auto lib_str = lib_path.string();
+    const char *bin = lib_str.c_str();
 
     using namespace test_basic;
     cr_plugin ctx;

@@ -1,74 +1,64 @@
 {
- "configurations":[
-     {
-         "name": "(gdb) tests",
-         "type": "cppdbg",
-         "request": "launch",
-         "program": "${workspaceFolder}/../fips-deploy/cr/linux-make-debug/crTest",
-         "args": [],
-         "stopAtEntry": false,
-         "cwd": "${workspaceFolder}",
-         "environment": [],
-         "externalConsole": true,
-         "MIMode": "gdb",
-         "setupCommands": [
-             {
-                 "description": "Enable pretty-printing for gdb",
-                 "text": "-enable-pretty-printing",
-                 "ignoreFailures": true
-             }
-         ]
-     },
-  {
-   "request":"launch",
-   "name":"(win) imgui_host",
-   "environment":[],
-   "program":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug/imgui_host.exe",
-   "stopAtEntry":true,
-   "type":"cppvsdbg",
-   "externalConsole":false,
-   "cwd":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug",
-   "args":[]
-  },
-  {
-   "request":"launch",
-   "name":"(win) tests",
-   "environment":[],
-   "program":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug/crTest.exe",
-   "stopAtEntry":true,
-   "type":"cppvsdbg",
-   "externalConsole":false,
-   "cwd":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug",
-   "args":[]
-  },
-  {
-   "request":"launch",
-   "name":"(win) basic_host",
-   "environment":[],
-   "program":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug/basic_host.exe",
-   "stopAtEntry":true,
-   "type":"cppvsdbg",
-   "externalConsole":false,
-   "cwd":"${workspaceFolder}/fips-deploy/cr/win64-vscode-debug",
-   "args":[]
-  },
-  {
-   "request":"launch",
-   "name":"(win) fips codegen",
-   "program":"${workspaceFolder}/cr/.fips-gen.py",
-   "pythonPath":"${config:python.pythonPath}",
-   "type":"python",
-   "debugOptions":[
-    "WaitOnAbnormalExit",
-    "WaitOnNormalExit",
-    "RedirectOutput"
-   ],
-   "cwd":"${workspaceFolder}/cr",
-   "stopOnEntry":true,
-   "args":[
-    "${workspaceFolder}/fips-build/cr/win64-vscode-debug/fips_codegen.yml"
-   ]
-  }
- ],
- "version":"0.2.0"
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Tests (Visual Studio Debugger)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tests/crTest.exe",
+            "cwd": "${workspaceFolder}/build/tests",
+            "symbolSearchPath": "${workspaceFolder}/build/tests",
+            "console": "integratedTerminal",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "preLaunchTask": "Build with CMake"
+        },
+        {
+            "name": "Launch basic sample (VS Debugger)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/samples/basic/basic_host.exe",
+            "cwd": "${workspaceFolder}/build/samples/basic",
+            "symbolSearchPath": "${workspaceFolder}/build/samples/basic",
+            "console": "integratedTerminal",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "preLaunchTask": "Build with CMake"
+        },
+        {
+            "name": "Launch basic sample b (VS Debugger)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/samples/basic/basic_host_b.exe",
+            "cwd": "${workspaceFolder}/build/samples/basic",
+            "symbolSearchPath": "${workspaceFolder}/build/samples/basic",
+            "console": "integratedTerminal",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "preLaunchTask": "Build with CMake"
+        },
+        {
+            "name": "Launch imgui sample (VS Debugger)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/samples/imgui/imgui_host.exe",
+            "cwd": "${workspaceFolder}/build/samples/imgui",
+            "symbolSearchPath": "${workspaceFolder}/build/samples/imgui",
+            "console": "integratedTerminal",
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "preLaunchTask": "Build with CMake"
+        }
+    ]
 }

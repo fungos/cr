@@ -1,100 +1,29 @@
 {
+    // See https://code.visualstudio.com/docs/editor/tasks for more information
     "version": "2.0.0",
- "tasks":[
-    {
-        "label": "glfw3",
-        "type": "shell",
-        "args": [
-            "make",
-            "glfw3"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "googletest",
-        "type": "shell",
-        "args": [
-            "make",
-            "googletest"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "basic_guest",
-        "type": "shell",
-        "args": [
-            "make",
-            "basic_guest"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "imgui_host",
-        "type": "shell",
-        "args": [
-            "make",
-            "imgui_host"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "test_basic",
-        "type": "shell",
-        "args": [
-            "make",
-            "test_basic"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "crTest",
-        "type": "shell",
-        "args": [
-            "make",
-            "crTest"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "basic_host",
-        "type": "shell",
-        "args": [
-            "make",
-            "basic_host"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "imgui_guest",
-        "type": "shell",
-        "args": [
-            "make",
-            "imgui_guest"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "imgui",
-        "type": "shell",
-        "args": [
-            "make",
-            "imgui"
-        ],
-        "problemMatcher": "$msCompile"
-    },
-    {
-        "label": "ALL",
-        "type": "shell",
-        "args": [
-            "build"
-        ],
-        "problemMatcher": "$msCompile",
-        "group": {
-            "_id": "build",
-            "isDefault": false
+    "tasks": [
+        {
+            "label": "Build with CMake",
+            "type": "shell",
+            "command": "cmake",
+            "windows": {
+                "args": [
+                    "--build",
+                    "${workspaceFolder}/build"
+                ],
+                "problemMatcher": ["$gcc"]
+            },
+            "linux": {
+                "args": [
+                    "--build",
+                    "${workspaceFolder}/build"
+                ]
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Builds the project using CMake."
         }
-    }
-],
- "echoCommand":true,
- "command":"fips"
+    ]
 }

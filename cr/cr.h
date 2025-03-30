@@ -78,6 +78,12 @@ CR_EXPORT int cr_main(struct cr_plugin *ctx, enum cr_op operation) {
 
 ### Changelog
 
+#### 2025-03-30
+
+- Removed FIPS and moved to pure CMake.
+- As a result, cr.h has been moved into the cr directory.
+- Using cr as a cmake dependency (`target_link_libraries(<my_target> PRIVATE cr)`) will expose the cr.h header file to the target.
+
 #### 2020-04-19
 
 - Added a failure `CR_INITIAL_FAILURE`. If the initial plugin crashes, the host must determine the next path, and we will not reload
@@ -109,16 +115,45 @@ The second one demonstrates how to live-reload an opengl application using
 
  ![imgui sample](https://i.imgur.com/Nq6s0GP.gif)
 
-#### Running Samples and Tests
+#### Samples and Tests
 
-The samples and tests uses the [fips build system](https://github.com/floooh/fips). It requires Python and CMake.
+To build, use the given CMake preset:
 
 ```
-$ ./fips build            # will generate and build all artifacts
-$ ./fips run crTest       # To run tests
-$ ./fips run imgui_host   # To run imgui sample
-# open a new console, then modify imgui_guest.cpp
-$ ./fips make imgui_guest # to build and force imgui sample live reload
+$ cmake --preset Default .
+$ cmake --build build
+```
+
+To run the tests, you can use the vscode Launch Tests option (Windows only, currently), or:
+
+```
+$ cd build/tests
+$ ctest build
+```
+
+To use the basic sample, you can use the vscode Launch basic sample option (Windows only, currently), or:
+
+```
+$ cd build/samples/basic
+$ ./basic_host # or basic_host_b
+
+# Edit basic_guest.c, or just:
+$ touch basic_guest.c
+
+# rebuild
+$ cmake --build ../../
+```
+
+For the imgui sample, after building:
+```
+$ cd build/samples/imgui
+$ ./imgui_host
+
+# Edit imgui_guest.cpp, or just:
+$ touch imgui_guest.cpp
+
+# rebuild
+$ cmake --build ../../
 ```
 
 ### Documentation
@@ -332,6 +367,8 @@ With all these information you'll be able to decide which is better to your use 
 [@pixelherodev](https://github.com/pixelherodev)
 
 [Alexander](https://github.com/clibequilibrium)
+
+[Vikram Saran](https://github.com/vikhik)
 
 ### Contributing
 
@@ -1177,14 +1214,21 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
-#ifndef __MINGW32__
-    __try {
-        if (p->main) {
-            return p->main(&ctx, operation);
-        }
-    } __except (cr_seh_filter(ctx, GetExceptionCode())) {
-        return -1;
-    }
+#if !defined(__MINGW32__)
+    #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wlanguage-extension-token"
+    #endif
+        __try {
+                if (p->main) {
+                    return p->main(&ctx, operation);
+                }
+            } __except (cr_seh_filter(ctx, GetExceptionCode())) {
+                return -1;
+            }
+    #if defined(__clang__)
+    #pragma clang diagnostic pop
+    #endif
 #else
     if (int sig = __builtin_setjmp(env)) {
         ctx.version = ctx.last_working_version;
