@@ -32,6 +32,7 @@ if (imgui_ADDED)
   else()
     target_compile_options(imgui PRIVATE -w)
   endif()
+  set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 include(cmake/imgui_deps.cmake)
@@ -47,7 +48,9 @@ target_include_directories(imgui_host PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 set_imgui_sample_deps(imgui_host)
 target_compile_definitions(imgui_host PRIVATE CR_DEPLOY_PATH="${CMAKE_CURRENT_BINARY_DIR}")
 
-add_custom_command(TARGET imgui_host POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:imgui_host> $<TARGET_FILE_DIR:imgui_host>
-  COMMAND_EXPAND_LISTS
-)
+if (WIN32)
+  add_custom_command(TARGET imgui_host POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:imgui_host> $<TARGET_FILE_DIR:imgui_host>
+    COMMAND_EXPAND_LISTS
+  )
+endif()

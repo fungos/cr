@@ -11,6 +11,7 @@ cpmaddpackage(
   "BUILD_GTEST ON"
   SYSTEM
 )
+target_compile_options(gtest PRIVATE -Wno-error=maybe-uninitialized)
 
 add_library(test_basic MODULE test_basic.cpp test_basic.x)
 target_include_directories(test_basic PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -29,6 +30,6 @@ if (NOT MSVC)
     set_target_properties(crTest PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
 endif()
 
-target_link_libraries(crTest gtest gtest_main cr)
+target_link_libraries(crTest PRIVATE gtest gtest_main cr)
 enable_testing()
 add_test(crTest crTest)

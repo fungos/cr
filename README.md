@@ -135,8 +135,14 @@ $ cmake --build ../../
 
 For the imgui sample, after building:
 ```
-$ TODO: run imgui_host
-$ TODO: rebuild imgui_guest while running
+$ cd build/samples/imgui
+$ ./imgui_host
+
+# Edit imgui_guest.cpp, or just:
+$ touch imgui_guest.cpp
+
+# rebuild
+$ cmake --build ../../
 ```
 
 ### Documentation
