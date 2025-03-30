@@ -1177,14 +1177,21 @@ static int cr_seh_filter(cr_plugin &ctx, unsigned long seh) {
 
 static int cr_plugin_main(cr_plugin &ctx, cr_op operation) {
     auto p = (cr_internal *)ctx.p;
-#ifndef __MINGW32__
-    __try {
-        if (p->main) {
-            return p->main(&ctx, operation);
-        }
-    } __except (cr_seh_filter(ctx, GetExceptionCode())) {
-        return -1;
-    }
+#if !defined(__MINGW32__)
+    #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wlanguage-extension-token"
+    #endif
+        __try {
+                if (p->main) {
+                    return p->main(&ctx, operation);
+                }
+            } __except (cr_seh_filter(ctx, GetExceptionCode())) {
+                return -1;
+            }
+    #if defined(__clang__)
+    #pragma clang diagnostic pop
+    #endif
 #else
     if (int sig = __builtin_setjmp(env)) {
         ctx.version = ctx.last_working_version;

@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "kylinideteam.cmake-intellisence",
+        "ms-vscode.cmake-tools",
+        "albertziegenhagel.childdebugger",
+        "cheshirekow.cmake-format"
+    ]
+}

@@ -106,14 +106,18 @@ The second one demonstrates how to live-reload an opengl application using
 
 #### Running Samples and Tests
 
-The samples and tests uses the [fips build system](https://github.com/floooh/fips). It requires Python and CMake.
+Just use cmake.
 
 ```
-$ ./fips build            # will generate and build all artifacts
-$ ./fips run crTest       # To run tests
-$ ./fips run imgui_host   # To run imgui sample
-# open a new console, then modify imgui_guest.cpp
-$ ./fips make imgui_guest # to build and force imgui sample live reload
+$ cmake . -B build
+$ cmake --build build
+$ ctest build # runs crTest
+```
+
+For the imgui sample, after building:
+```
+$ TODO: run imgui_host
+$ TODO: rebuild imgui_guest while running
 ```
 
 ### Documentation

@@ -1,3 +1,5 @@
 .fips-imports.cmake
 .fips-gen.py
 CMakeUserPresets.json
+.vs
+build
