@@ -73,6 +73,12 @@ CR_EXPORT int cr_main(struct cr_plugin *ctx, enum cr_op operation) {
 
 ### Changelog
 
+#### 2025-03-30
+
+- Removed FIPS and moved to pure CMake.
+- As a result, cr.h has been moved into the cr directory.
+- Using cr as a cmake dependency (`target_link_libraries(<my_target> PRIVATE cr)`) will expose the cr.h header file to the target.
+
 #### 2020-04-19
 
 - Added a failure `CR_INITIAL_FAILURE`. If the initial plugin crashes, the host must determine the next path, and we will not reload
@@ -356,6 +362,8 @@ With all these information you'll be able to decide which is better to your use 
 [@pixelherodev](https://github.com/pixelherodev)
 
 [Alexander](https://github.com/clibequilibrium)
+
+[Vikram Saran](https://github.com/vikhik)
 
 ### Contributing
 
