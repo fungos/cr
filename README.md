@@ -38,7 +38,7 @@ live-reloading of the real application in the form of dynamic loadable binary, a
 #include "cr.h"
 
 int main(int argc, char *argv[]) {
-    // the host application should initalize a plugin with a context, a plugin
+    // the host application should initialize a plugin with a context, a plugin
     cr_plugin ctx;
 
     // the full path to the live-reloadable application
@@ -92,7 +92,7 @@ the broken plugin.
 #### 2018-11-17
 
 - Support to OSX finished, thanks to MESH Consultants Inc.
-- Added a new possible failure `CR_BAD_IMAGE` in case the binary file is stil not ready even if its timestamp changed. This could happen if generating the file (compiler or copying) was slow.
+- Added a new possible failure `CR_BAD_IMAGE` in case the binary file is still not ready even if its timestamp changed. This could happen if generating the file (compiler or copying) was slow.
 - Windows: Fix issue with too long paths causing the PDB patch process to fail, causing the reload process to fail.
 - **Possible breaking change:** Fix rollback flow. Before, during a rollback (for any reason) two versions were decremented one-shot so that the in following load, the version would bump again getting us effectively on the previous version, but in some cases not related to crashes this wasn't completely valid (see `CR_BAD_IMAGE`). Now the version is decremented one time in the crash handler and then another time during the rollback and then be bumped again. A rollback due an incomplete image will not incorrectly rollback two versions, it will continue at the same version retrying the load until the image is valid (copy or compiler finished writing to it). This may impact current uses of `cr` if the `version` info is used during `CR_UNLOAD` as it will now be a different value.
 
@@ -277,7 +277,7 @@ Optionally `CR_HOST` may also be defined to one of the following values as a way
  address of the statics may change (and it is best to avoid holding any pointer
   to static stuff);
 - `CR_UNSAFE` Will validate nothing but that the size of section fits, may not
- be necessarelly exact (growing is acceptable but shrinking isn't), this is the
+ be necessarily exact (growing is acceptable but shrinking isn't), this is the
  default behavior;
 - `CR_DISABLE` Completely disable automatic static state management;
 
