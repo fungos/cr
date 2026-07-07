@@ -698,7 +698,7 @@ struct cr_internal {
     time_t timestamp = {};
     void *handle = nullptr;
     cr_plugin_main_func main = nullptr;
-    cr_plugin_segment seg = {};
+    intptr_t load_base = 0;
     cr_plugin_section data[cr_plugin_section_type::count]
                           [cr_plugin_section_version::count] = {};
     cr_mode mode = CR_SAFEST;
@@ -1381,37 +1381,37 @@ bool cr_elf_validate_sections(cr_plugin &ctx, bool rollback, H shdr, int shnum,
     CR_ASSERT(sh_strtab_p);
     auto p = (cr_internal *)ctx.p;
     bool result = true;
+
+    const intptr_t load_addr = p->load_base;
+
     for (int i = 0; i < shnum; ++i) {
         const char *name = sh_strtab_p + shdr[i].sh_name;
         auto sectionHeader = shdr[i];
-        const int64_t addr = sectionHeader.sh_addr;
         const int64_t size = sectionHeader.sh_size;
-        const int64_t base = (intptr_t)p->seg.ptr + p->seg.size;
+
+        const int64_t vaddr = load_addr + sectionHeader.sh_addr;
+
         if (!strcmp(name, ".state")) {
-            const int64_t vaddr = base - size;
             auto sec = cr_plugin_section_type::state;
             if (ctx.version || rollback) {
-                result &=
-                    cr_plugin_section_validate(ctx, sec, vaddr, addr, size);
+                result &= cr_plugin_section_validate(
+                    ctx, sec, vaddr, sectionHeader.sh_addr, size);
             }
             if (result) {
-                cr_elf_section_save(ctx, sec, vaddr, addr, sectionHeader);
+                cr_elf_section_save(ctx, sec, vaddr, sectionHeader.sh_addr,
+                                    sectionHeader);
             }
         } else if (!strcmp(name, ".bss")) {
-            // .bss goes past segment filesz, but it may be just padding
-            const int64_t vaddr = base;
             auto sec = cr_plugin_section_type::bss;
             if (ctx.version || rollback) {
-                // this is kinda hack to skip bss validation if our data is zero
-                // this means we don't care scrapping it, and helps skipping
-                // validating a .bss that serves only as padding in the segment.
                 if (!cr_is_empty(p->data[sec][0].data, p->data[sec][0].size)) {
-                    result &=
-                        cr_plugin_section_validate(ctx, sec, vaddr, addr, size);
+                    result &= cr_plugin_section_validate(
+                        ctx, sec, vaddr, sectionHeader.sh_addr, size);
                 }
             }
             if (result) {
-                cr_elf_section_save(ctx, sec, vaddr, addr, sectionHeader);
+                cr_elf_section_save(ctx, sec, vaddr, sectionHeader.sh_addr,
+                                    sectionHeader);
             }
         }
     }
@@ -1420,8 +1420,6 @@ bool cr_elf_validate_sections(cr_plugin &ctx, bool rollback, H shdr, int shnum,
 
 struct cr_ld_data {
     cr_plugin *ctx = nullptr;
-    int64_t data_segment_address = 0;
-    int64_t data_segment_size = 0;
     const char *fullname = nullptr;
 };
 
@@ -1448,24 +1446,10 @@ static int cr_dl_header_handler(struct dl_phdr_info *info, size_t,
         return 0;
     }
 
-    for (int i = 0; i < info->dlpi_phnum; i++) {
-        auto phdr = info->dlpi_phdr[i];
-        if (phdr.p_type != PT_LOAD) {
-            continue;
-        }
-
-        // assume the first writable segment is the one that contains our
-        // sections this may not be true I imagine, but if this becomes an
-        // issue we fix it by comparing against section addresses, but this
-        // will require some rework on the code flow.
-        if (phdr.p_flags & PF_W) {
-            auto pimpl = (cr_internal *)ctx->p;
-            pimpl->seg.ptr = (char *)(info->dlpi_addr + phdr.p_vaddr);
-            pimpl->seg.size = phdr.p_filesz;
-            break;
-        }
-    }
-    return 0;
+    // dlpi_addr is the load bias of the entire .so file in memory.
+    auto pimpl = (cr_internal *)ctx->p;
+    pimpl->load_base = info->dlpi_addr;
+    return 1; // dl_iterate_phdr stops when returnign non-zero value
 }
 
 static bool cr_plugin_validate_sections(cr_plugin &ctx, so_handle handle,
